@@ -1,0 +1,82 @@
+{% extends "_layouts/cp" %}
+
+{% import "microscope/_partials/macros" as microscope %}
+
+{% set selectedSubnavItem = 'scans' %}
+
+{% do view.registerAssetBundle("justinholtweb\\microscope\\web\\assets\\cp\\MicroscopeAsset") %}
+
+{% block actionButton %}
+    {% if canScan %}
+        <form method="post" accept-charset="UTF-8">
+            {{ csrfInput() }}
+            {{ actionInput('microscope/scans/run') }}
+            {{ redirectInput('microscope/scans') }}
+            <button type="submit" class="btn submit">{{ 'Run a scan'|t('microscope') }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if scans|length == 0 %}
+        <div class="microscope-empty">
+            <h2>{{ 'No scans yet'|t('microscope') }}</h2>
+            <p>{{ 'Run one from here, or on a schedule, or from the command line with `craft microscope/scan/run`.'|t('microscope') }}</p>
+        </div>
+    {% else %}
+        <table class="data fullwidth">
+            <thead>
+                <tr>
+                    <th>{{ 'When'|t('microscope') }}</th>
+                    <th>{{ 'Score'|t('microscope') }}</th>
+                    <th>{{ 'Findings'|t('microscope') }}</th>
+                    <th>{{ 'Trigger'|t('microscope') }}</th>
+                    <th>{{ 'Duration'|t('microscope') }}</th>
+                    <th class="thin"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                    <tr>
+                        <td>
+                            {% if scan.isCompleted() %}
+                                <a href="{{ url('microscope/scans/' ~ scan.id) }}">
+                                    {{ scan.dateCreated|datetime('short') }}
+                                </a>
+                            {% else %}
+                                {{ scan.dateCreated|datetime('short') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scan.isCompleted() %}
+                                <strong>{{ scan.score }}</strong><span class="light">/100</span>
+                                <span class="microscope-badge microscope-badge-{{ scan.tone() == 'good' ? 'pass' : (scan.tone() == 'bad' ? 'critical' : 'warning') }}">
+                                    {{ scan.grade() }}
+                                </span>
+                            {% elseif scan.isFailed() %}
+                                <span class="microscope-badge microscope-badge-critical">{{ 'failed'|t('microscope') }}</span>
+                            {% else %}
+                                <span class="microscope-badge microscope-badge-notice">{{ scan.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scan.isFailed() %}
+                                <span class="light">{{ scan.error|slice(0, 120) }}</span>
+                            {% else %}
+                                {{ microscope.countSummary(scan) }}
+                            {% endif %}
+                        </td>
+                        <td><span class="light">{{ scan.trigger }}</span></td>
+                        <td><span class="light">{{ scan.runtime ? scan.runtime|number_format(1) ~ 's' : '—' }}</span></td>
+                        <td class="thin">
+                            {% if scan.isCompleted() %}
+                                <a class="btn small" href="{{ url('microscope/scans/' ~ scan.id ~ '/report') }}"
+                                   target="_blank" rel="noopener">{{ 'Report'|t('microscope') }}</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}

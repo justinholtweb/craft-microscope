@@ -1,0 +1,135 @@
+{# One finding, collapsed to its headline until somebody wants the detail.
+
+   Params:
+     finding  Finding
+     open     bool     start expanded
+     static   bool     render everything expanded with no controls (for print and PDF) #}
+
+{% set static = static ?? false %}
+{% set open = static or (open ?? false) %}
+{% set hasDetail = finding.impact or finding.remediation or finding.evidence %}
+
+<div class="microscope-finding microscope-finding-{{ finding.severity }}{{ open ? ' is-open' : '' }}">
+    {% if static %}
+        <div class="microscope-finding-header">
+    {% else %}
+        <button type="button" class="microscope-finding-header" data-microscope-toggle
+                aria-expanded="{{ open ? 'true' : 'false' }}"{{ not hasDetail ? ' disabled' : '' }}>
+    {% endif %}
+
+        <span class="microscope-badge microscope-badge-{{ finding.severity }}">
+            {{ finding.severity|t('microscope') }}
+        </span>
+
+        <span class="microscope-check-meta">
+            <span class="microscope-finding-title">{{ finding.title }}</span>
+            {% if finding.summary %}
+                {# Inline markdown: summaries name settings and directives, and `devMode` should
+                   read as code rather than as literal backticks. `true` keeps it inline, without
+                   the wrapping <p> that block rendering would add inside this header. #}
+                <span class="microscope-finding-summary">{{ finding.summary|md('gfm', true) }}</span>
+            {% endif %}
+
+            {% if finding.observed or finding.expected %}
+                <dl class="microscope-measure">
+                    {% if finding.observed %}
+                        <div>
+                            <dt>{{ 'Found'|t('microscope') }}</dt>
+                            <dd>{{ finding.observed }}</dd>
+                        </div>
+                    {% endif %}
+                    {% if finding.expected %}
+                        <div>
+                            <dt>{{ 'Recommended'|t('microscope') }}</dt>
+                            <dd>{{ finding.expected }}</dd>
+                        </div>
+                    {% endif %}
+                    {% if finding.occurrences > 1 %}
+                        <div>
+                            <dt>{{ 'Occurrences'|t('microscope') }}</dt>
+                            <dd>{{ finding.occurrences }}</dd>
+                        </div>
+                    {% endif %}
+                </dl>
+            {% endif %}
+        </span>
+
+        {% if not static and hasDetail %}
+            <span class="microscope-finding-toggle" aria-hidden="true">›</span>
+        {% endif %}
+
+    {% if static %}
+        </div>
+    {% else %}
+        </button>
+    {% endif %}
+
+    {% if hasDetail %}
+        <div class="microscope-finding-body"{{ open ? '' : ' hidden' }}>
+            {% if finding.impact %}
+                <h4>{{ 'Why it matters'|t('microscope') }}</h4>
+                {# The impact text carries inline code spans; `md` renders those without letting
+                   any raw HTML through, because the source is the plugin's own strings. #}
+                {{ finding.impact|md('gfm') }}
+            {% endif %}
+
+            {% if finding.remediation %}
+                <h4>{{ 'How to fix it'|t('microscope') }}</h4>
+                {{ finding.remediation|md('gfm') }}
+            {% endif %}
+
+            {% if finding.evidence|length %}
+                <h4>{{ 'Where'|t('microscope') }}</h4>
+                {% set columns = finding.evidence|first|keys %}
+                <div style="overflow-x: auto;">
+                    <table class="microscope-evidence">
+                        <thead>
+                            <tr>
+                                {% for column in columns %}
+                                    <th>{{ column|replace({'_': ' '})|title }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in finding.evidence %}
+                                <tr>
+                                    {% for column in columns %}
+                                        {% set value = row[column] ?? '' %}
+                                        <td>
+                                            {%- if value is same as(true) -%}
+                                                {{ 'yes'|t('microscope') }}
+                                            {%- elseif value is same as(false) -%}
+                                                {{ 'no'|t('microscope') }}
+                                            {%- elseif column in ['snippet', 'template', 'table', 'handle'] -%}
+                                                <code>{{ value }}</code>
+                                            {%- else -%}
+                                                {{ value }}
+                                            {%- endif -%}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if finding.occurrences > finding.evidence|length %}
+                    <p class="light" style="font-size: 12px; margin-top: 8px;">
+                        {{ 'Showing {shown} of {total} occurrences.'|t('microscope', {
+                            shown: finding.evidence|length,
+                            total: finding.occurrences,
+                        }) }}
+                    </p>
+                {% endif %}
+            {% endif %}
+
+            {% if finding.docsUrl %}
+                <p style="margin-top: 14px;">
+                    <a href="{{ finding.docsUrl }}" rel="noopener noreferrer" target="_blank">
+                        {{ 'Read more'|t('microscope') }} →
+                    </a>
+                </p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

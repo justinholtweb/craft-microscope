@@ -1,0 +1,64 @@
+/**
+ * Overrides applied only when the report is being rendered by dompdf.
+ *
+ * dompdf is not a browser. It has no flexbox worth relying on, no CSS custom properties, and its
+ * page-break handling needs telling explicitly what to do. Everything here exists because the
+ * screen stylesheet produces something wrong in a PDF, not because a PDF wants a different look.
+ */
+
+@page {
+    margin: 18mm 15mm;
+}
+
+body.microscope-report-pdf {
+    padding: 0;
+    max-width: none;
+    /* dompdf's default font has no glyphs for the typographic quotes, arrows and check marks used
+       throughout the findings; DejaVu Sans is bundled with dompdf and does. */
+    font-family: "DejaVu Sans", sans-serif;
+    font-size: 10.5px;
+    line-height: 1.55;
+}
+
+.microscope-report-pdf h1 { font-size: 24px; }
+.microscope-report-pdf h2 { font-size: 15px; }
+.microscope-report-pdf h3 { font-size: 12.5px; }
+
+.microscope-report-pdf pre,
+.microscope-report-pdf code {
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 9px;
+}
+
+/* dompdf ignores `overflow-x`, so a long line silently runs off the page unless it wraps. */
+.microscope-report-pdf pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    page-break-inside: avoid;
+}
+
+.microscope-report-pdf .report-screen-only {
+    display: none;
+}
+
+/* Each area starts on its own page: a report someone prints and works through is easier to use
+   when "the database section" is a page rather than a scroll position. */
+.microscope-report-pdf .report-findings {
+    page-break-before: always;
+}
+
+.microscope-report-pdf .report-finding {
+    page-break-inside: avoid;
+}
+
+/* dompdf renders very wide tables by overflowing the page rather than shrinking them. Fixed
+   layout plus wrapping keeps evidence tables inside the margins. */
+.microscope-report-pdf .report-table {
+    table-layout: fixed;
+    width: 100%;
+    word-wrap: break-word;
+}
+
+.microscope-report-pdf .report-evidence td {
+    font-size: 8.5px;
+}

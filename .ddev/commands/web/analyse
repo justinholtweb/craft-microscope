@@ -1,0 +1,22 @@
+#!/bin/bash
+
+## Description: Run PHPStan and the code-style check over Microscope
+## Usage: analyse
+## Example: "ddev analyse"
+
+cd /var/www/html || exit 1
+
+status=0
+
+if [ -f vendor/bin/phpstan ]; then
+  vendor/bin/phpstan --memory-limit=1G || status=1
+else
+  echo "phpstan is not installed; run 'ddev composer install'."
+  status=1
+fi
+
+if [ -f vendor/bin/ecs ]; then
+  vendor/bin/ecs check --ansi || status=1
+fi
+
+exit $status

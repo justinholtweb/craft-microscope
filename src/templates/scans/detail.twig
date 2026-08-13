@@ -1,0 +1,207 @@
+{% extends "_layouts/cp" %}
+
+{% import "microscope/_partials/macros" as microscope %}
+
+{% set selectedSubnavItem = 'scans' %}
+{% set crumbs = [
+    { label: 'Microscope'|t('microscope'), url: url('microscope') },
+    { label: 'Scans'|t('microscope'), url: url('microscope/scans') },
+] %}
+
+{% do view.registerAssetBundle("justinholtweb\\microscope\\web\\assets\\cp\\MicroscopeAsset") %}
+
+{% block actionButton %}
+    <div class="btngroup">
+        <a class="btn" href="{{ url('microscope/scans/' ~ scan.id ~ '/report') }}" target="_blank" rel="noopener">
+            {{ 'Print'|t('microscope') }}
+        </a>
+        {% if pdfAvailable %}
+            <a class="btn" href="{{ url('microscope/scans/' ~ scan.id ~ '/report.pdf') }}">
+                {{ 'Download PDF'|t('microscope') }}
+            </a>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+    {% if scan.isFailed() %}
+        <div class="microscope-finding microscope-finding-critical">
+            <div class="microscope-finding-header">
+                <span class="microscope-badge microscope-badge-critical">{{ 'failed'|t('microscope') }}</span>
+                <span class="microscope-check-meta">
+                    <span class="microscope-finding-title">{{ 'This scan didn’t finish'|t('microscope') }}</span>
+                    <span class="microscope-finding-summary">{{ scan.error }}</span>
+                </span>
+            </div>
+        </div>
+    {% elseif scan.isRunning() %}
+        <div class="microscope-empty" data-microscope-poll="{{ scan.id - 1 }}"
+             data-microscope-status-url="{{ actionUrl('microscope/scans/status') }}">
+            <h2>{{ 'Scanning…'|t('microscope') }}</h2>
+            <p>{{ 'This page will refresh when the scan finishes.'|t('microscope') }}</p>
+            <p class="light" hidden data-microscope-timeout>
+                {{ 'The scan is taking longer than expected. Check that Craft’s queue is running.'|t('microscope') }}
+            </p>
+        </div>
+    {% else %}
+        {# ---------------------------------------------------------- score #}
+        <div class="microscope-hero">
+            {% include "microscope/_partials/gauge" with {
+                score: scan.score,
+                tone: scan.tone(),
+                grade: scan.grade(),
+            } only %}
+
+            <div class="microscope-hero-detail">
+                <h2 class="microscope-headline">{{ result.headline() }}</h2>
+                <p class="light">
+                    {{ scan.dateCreated|datetime('long') }}
+                    · {{ '{n}s'|t('microscope', { n: scan.runtime|number_format(1) }) }}
+                    · {{ scan.trigger }}
+                    {%- if scan.config and not scan.config.isFullScan() %}
+                        · {{ 'partial scan'|t('microscope') }}
+                    {% endif %}
+                </p>
+
+                {% if previous and previous.score is not null %}
+                    {% set delta = scan.score - previous.score %}
+                    <p>
+                        {% if delta != 0 %}
+                            <span class="microscope-badge microscope-badge-{{ delta > 0 ? 'pass' : 'critical' }}">
+                                {{ delta > 0 ? '▲' : '▼' }} {{ delta|abs }}
+                            </span>
+                        {% endif %}
+                        <a href="{{ url('microscope/scans/' ~ previous.id) }}">
+                            {{ 'compared with scan #{id}'|t('microscope', { id: previous.id }) }}
+                        </a>
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr>
+        {% include "microscope/_partials/categories" with {
+            result: result,
+            categories: categories,
+            linkTo: null,
+        } only %}
+
+        {# -------------------------------------------------------- changes #}
+        {% if newFindings|length or resolvedFindings|length %}
+            <hr>
+            <h2>{{ 'Changes'|t('microscope') }}</h2>
+            <div class="microscope-categories">
+                {% if newFindings|length %}
+                    <div class="microscope-category">
+                        <div class="microscope-category-label">{{ 'New since last scan'|t('microscope') }}</div>
+                        <div class="microscope-category-score">{{ newFindings|length }}</div>
+                    </div>
+                {% endif %}
+                {% if resolvedFindings|length %}
+                    <div class="microscope-category">
+                        <div class="microscope-category-label">{{ 'Resolved'|t('microscope') }}</div>
+                        <div class="microscope-category-score">{{ resolvedFindings|length }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {# ------------------------------------------------------- findings #}
+        {% set grouped = result.groupedByCategory(true) %}
+
+        {% if grouped|length %}
+            {% for category, findings in grouped %}
+                <hr>
+                <h2 id="category-{{ category }}">
+                    {{ microscope.categoryLabel(category) }}
+                    <span class="light" style="font-weight: normal;">
+                        {{ '· {score}/100'|t('microscope', { score: result.categoryScore(category) }) }}
+                    </span>
+                </h2>
+
+                {% for finding in findings %}
+                    {% include "microscope/_partials/finding" with { finding: finding } only %}
+                {% endfor %}
+            {% endfor %}
+        {% else %}
+            <hr>
+            <div class="microscope-empty">
+                <h2>{{ 'Nothing to fix'|t('microscope') }}</h2>
+                <p>{{ 'Every check that ran came back clean.'|t('microscope') }}</p>
+            </div>
+        {% endif %}
+
+        {# --------------------------------------------------------- passes #}
+        {% set passes = result.passes() %}
+        {% if passes|length %}
+            <hr>
+            <h2>{{ 'Checks that passed'|t('microscope') }} <span class="light">({{ passes|length }})</span></h2>
+            <table class="data fullwidth">
+                <tbody>
+                    {% for finding in passes %}
+                        <tr>
+                            <td style="width: 30px;">
+                                <span class="microscope-badge microscope-badge-pass">✓</span>
+                            </td>
+                            <td>{{ finding.title }}</td>
+                            <td class="light"><code>{{ finding.observed ?? '' }}</code></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {# -------------------------------------------------------- skipped #}
+        {% if result.skipped|length %}
+            <hr>
+            <h2>{{ 'Checks that couldn’t run'|t('microscope') }} <span class="light">({{ result.skipped|length }})</span></h2>
+            <p class="light">
+                {{ 'These didn’t apply here, or this environment wouldn’t let Microscope see what it needed. They don’t count against the score.'|t('microscope') }}
+            </p>
+            <ul class="microscope-skipped">
+                {% for handle, reason in result.skipped %}
+                    <li><code>{{ handle }}</code> — {{ reason }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {# ---------------------------------------------------- environment #}
+        {% if result.environment|length %}
+            <hr>
+            <h2>{{ 'Environment'|t('microscope') }}</h2>
+            <table class="data fullwidth">
+                <tbody>
+                    {% for group, values in result.environment %}
+                        {% if values is iterable %}
+                            {% for key, value in values %}
+                                <tr>
+                                    <th style="width: 220px;">{{ group }}.{{ key }}</th>
+                                    <td>
+                                        <code>
+                                            {%- if value is same as(true) -%}true
+                                            {%- elseif value is same as(false) -%}false
+                                            {%- elseif value is iterable -%}{{ value|join(', ') }}
+                                            {%- else -%}{{ value ?? '—' }}
+                                            {%- endif -%}
+                                        </code>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {# --------------------------------------------------------- delete #}
+        {% if currentUser.can('microscope:manage') %}
+            <hr>
+            <form method="post" accept-charset="UTF-8">
+                {{ csrfInput() }}
+                {{ actionInput('microscope/scans/delete') }}
+                {{ hiddenInput('scanId', scan.id) }}
+                <button type="submit" class="btn" data-icon="trash">{{ 'Delete this scan'|t('microscope') }}</button>
+            </form>
+        {% endif %}
+    {% endif %}
+{% endblock %}

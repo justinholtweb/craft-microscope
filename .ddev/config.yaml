@@ -1,0 +1,33 @@
+name: craft-microscope
+type: php
+docroot: ""
+php_version: "8.3"
+webserver_type: nginx-fpm
+xdebug_enabled: false
+additional_hostnames: []
+additional_fqdns: []
+database:
+    type: mariadb
+    version: "10.11"
+use_dns_when_possible: true
+composer_version: "2"
+corepack_enable: false
+
+# Microscope is a plugin package, not a site — this DDEV project exists so the
+# test suite runs against a pinned PHP and a real database, with none of the
+# host's own PHP configuration bleeding in.
+#
+#   ddev start
+#   ddev composer install
+#   ddev test              # unit + integration
+#   ddev test --testsuite Unit
+#
+# The integration suite talks to the `db` service directly (see
+# tests/Integration), which is what lets the MySQL/MariaDB probe be tested
+# against a live server rather than a fixture.
+web_environment:
+    - MICROSCOPE_DB_HOST=db
+    - MICROSCOPE_DB_PORT=3306
+    - MICROSCOPE_DB_NAME=db
+    - MICROSCOPE_DB_USER=db
+    - MICROSCOPE_DB_PASSWORD=db

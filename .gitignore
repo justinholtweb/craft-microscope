@@ -1,0 +1,9 @@
+/vendor
+/.phpunit.cache
+/.ddev/db_snapshots
+/.ddev/.ddev-docker-*
+/.ddev/*.yaml.bak
+.DS_Store
+.idea
+.phpunit.result.cache
+composer.phar

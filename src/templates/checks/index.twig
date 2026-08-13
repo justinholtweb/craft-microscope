@@ -1,0 +1,74 @@
+{% extends "_layouts/cp" %}
+
+{% import "_includes/forms" as forms %}
+{% import "microscope/_partials/macros" as microscope %}
+
+{% set selectedSubnavItem = 'checks' %}
+
+{% do view.registerAssetBundle("justinholtweb\\microscope\\web\\assets\\cp\\MicroscopeAsset") %}
+
+{% block content %}
+    <p class="light">
+        {{ 'Every check Microscope knows how to run. Turning one off removes it from future scans and from the score — useful when a recommendation doesn’t apply to how this site is hosted.'|t('microscope') }}
+    </p>
+
+    {% for category, checks in grouped %}
+        <hr>
+        <h2>{{ microscope.categoryLabel(category) }}</h2>
+
+        {% for check in checks %}
+            {% set state = availability[check.handle()] ?? { available: true, reason: null } %}
+            {% set enabled = settings.checkIsEnabled(check.handle()) %}
+
+            <div class="microscope-check-row">
+                <div style="flex: 0 0 auto; padding-top: 2px;">
+                    {% if canManage %}
+                        <div class="lightswitch{{ enabled ? ' on' : '' }}">
+                            <input type="checkbox"
+                                   data-microscope-check="{{ check.handle() }}"
+                                   {{ enabled ? 'checked' : '' }}
+                                   aria-label="{{ 'Enable {label}'|t('microscope', { label: check.label() }) }}">
+                        </div>
+                    {% else %}
+                        <span class="microscope-badge microscope-badge-{{ enabled ? 'pass' : 'notice' }}">
+                            {{ enabled ? 'on'|t('microscope') : 'off'|t('microscope') }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="microscope-check-meta">
+                    <strong>{{ check.label() }}</strong>
+                    <span class="microscope-check-handle">{{ check.handle() }}</span>
+                    <div class="light" style="font-size: 13px;">{{ check.description() }}</div>
+
+                    {% if not state.available %}
+                        <div class="microscope-unavailable">
+                            {{ 'Can’t run here:'|t('microscope') }} {{ state.reason }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# The template rules aren't checks in their own right — they all come from one check — but a
+       reader looking for "what does Microscope look for in my templates?" will look here. #}
+    <hr>
+    <h2>{{ 'Template rules'|t('microscope') }}</h2>
+    <p class="light">
+        {{ 'The patterns the template check looks for. These run together as part of the Template analysis check above.'|t('microscope') }}
+    </p>
+
+    {% for rule in analyzer.rules() %}
+        <div class="microscope-check-row">
+            <div style="flex: 0 0 auto; padding-top: 2px;">
+                <span class="microscope-badge microscope-badge-{{ rule.severity() }}">{{ rule.severity() }}</span>
+            </div>
+            <div class="microscope-check-meta">
+                <strong>{{ rule.title() }}</strong>
+                <span class="microscope-check-handle">{{ rule.handle() }}</span>
+                <div class="light" style="font-size: 13px;">{{ rule.impact() }}</div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}

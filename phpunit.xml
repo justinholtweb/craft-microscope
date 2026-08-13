@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnRisky="true">
+    <testsuites>
+        <!-- Plain PHP. No Craft application, no database. -->
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <!-- Needs a live MySQL/MariaDB; skips itself when there isn't one. -->
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+        <exclude>
+            <directory>src/templates</directory>
+            <directory>src/translations</directory>
+            <directory>src/web/assets</directory>
+            <directory>src/migrations</directory>
+        </exclude>
+    </source>
+</phpunit>

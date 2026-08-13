@@ -1,0 +1,13 @@
+#!/bin/bash
+
+## Description: Run Microscope's PHPUnit suite
+## Usage: test [flags] [args]
+## Example: "ddev test", "ddev test --testsuite Unit", "ddev test --filter TemplateAnalyzer"
+
+if [ ! -f /var/www/html/vendor/bin/phpunit ]; then
+  echo "Dependencies are not installed yet. Run 'ddev composer install' first."
+  exit 1
+fi
+
+cd /var/www/html || exit 1
+exec vendor/bin/phpunit "$@"

@@ -1,0 +1,228 @@
+{% extends "_layouts/cp" %}
+
+{% import "_includes/forms" as forms %}
+
+{% set selectedSubnavItem = 'settings' %}
+{% set fullPageForm = true %}
+
+{% do view.registerAssetBundle("justinholtweb\\microscope\\web\\assets\\cp\\MicroscopeAsset") %}
+
+{% block content %}
+    {{ actionInput('microscope/settings/save') }}
+    {{ redirectInput('microscope/settings') }}
+
+    <h2>{{ 'What gets scanned'|t('microscope') }}</h2>
+
+    {{ forms.lightswitchField({
+        label: 'Scan templates'|t('microscope'),
+        instructions: 'Read the site’s Twig templates looking for queries inside loops, unbounded queries and missing eager loading.'|t('microscope'),
+        id: 'scanTemplates',
+        name: 'settings[scanTemplates]',
+        on: settings.scanTemplates,
+    }) }}
+
+    {{ forms.textareaField({
+        label: 'Extra template directories'|t('microscope'),
+        instructions: 'One per line. Relative paths are resolved from the Craft base path. The site’s own `templates/` directory is always included.'|t('microscope'),
+        id: 'templateDirectories',
+        name: 'settings[templateDirectories]',
+        value: settings.templateDirectories|join("\n"),
+        rows: 3,
+        placeholder: 'modules/mymodule/templates',
+    }) }}
+
+    {% if templateDirectories|length %}
+        <p class="light" style="font-size: 12px; margin-top: -12px;">
+            {{ 'Currently scanning:'|t('microscope') }}
+            {% for directory in templateDirectories %}<code>{{ directory }}</code>{{ not loop.last ? ', ' }}{% endfor %}
+        </p>
+    {% endif %}
+
+    {{ forms.textField({
+        label: 'Template limit'|t('microscope'),
+        instructions: 'A ceiling on how many templates one scan will read, so a large vendored template library can’t turn a scan into a filesystem crawl.'|t('microscope'),
+        id: 'maxTemplates',
+        name: 'settings[maxTemplates]',
+        value: settings.maxTemplates,
+        type: 'number',
+        size: 8,
+        errors: settings.getErrors('maxTemplates'),
+    }) }}
+
+    {{ forms.lightswitchField({
+        label: 'Allow shell probes'|t('microscope'),
+        instructions: 'Lets the server checks run short read-only commands (`nproc`, `free`, `nginx -V`) to report CPU, memory and web server details. With this off, those checks skip rather than guess. Many hosts disable this anyway — Microscope handles that gracefully either way.'|t('microscope'),
+        id: 'allowShellProbes',
+        name: 'settings[allowShellProbes]',
+        on: settings.allowShellProbes,
+    }) }}
+
+    <hr>
+
+    <h2>{{ 'Scheduled scans'|t('microscope') }}</h2>
+
+    {{ forms.lightswitchField({
+        label: 'Run scans on a schedule'|t('microscope'),
+        id: 'scheduleEnabled',
+        name: 'settings[scheduleEnabled]',
+        on: settings.scheduleEnabled,
+        toggle: 'schedule-settings',
+    }) }}
+
+    <div id="schedule-settings" class="{{ settings.scheduleEnabled ? '' : 'hidden' }}">
+        {{ forms.selectField({
+            label: 'Frequency'|t('microscope'),
+            id: 'scheduleFrequency',
+            name: 'settings[scheduleFrequency]',
+            value: settings.scheduleFrequency,
+            options: [
+                { label: 'Daily'|t('microscope'), value: 'daily' },
+                { label: 'Weekly'|t('microscope'), value: 'weekly' },
+                { label: 'Monthly'|t('microscope'), value: 'monthly' },
+            ],
+        }) }}
+
+        {# The parentheses around the ranges below matter: `..` binds looser than `|`, so
+           `0..23|map(…)` applies the filter to 23 rather than to the range. A Twig comment can't
+           sit inside an expression, hence this note living out here. #}
+        {{ forms.selectField({
+            label: 'Hour'|t('microscope'),
+            instructions: 'In the system timezone ({tz}).'|t('microscope', { tz: craft.app.timeZone }),
+            id: 'scheduleHour',
+            name: 'settings[scheduleHour]',
+            value: settings.scheduleHour,
+            options: (0..23)|map(h => { label: '%02d:00'|format(h), value: h }),
+        }) }}
+
+        {{ forms.selectField({
+            label: 'Day of week'|t('microscope'),
+            instructions: 'Used for weekly scans.'|t('microscope'),
+            id: 'scheduleWeekday',
+            name: 'settings[scheduleWeekday]',
+            value: settings.scheduleWeekday,
+            options: [
+                { label: 'Monday'|t('microscope'), value: 1 },
+                { label: 'Tuesday'|t('microscope'), value: 2 },
+                { label: 'Wednesday'|t('microscope'), value: 3 },
+                { label: 'Thursday'|t('microscope'), value: 4 },
+                { label: 'Friday'|t('microscope'), value: 5 },
+                { label: 'Saturday'|t('microscope'), value: 6 },
+                { label: 'Sunday'|t('microscope'), value: 7 },
+            ],
+        }) }}
+
+        {{ forms.selectField({
+            label: 'Day of month'|t('microscope'),
+            instructions: 'Used for monthly scans. Capped at the 28th so it lands in every month.'|t('microscope'),
+            id: 'scheduleDayOfMonth',
+            name: 'settings[scheduleDayOfMonth]',
+            value: settings.scheduleDayOfMonth,
+            options: (1..28)|map(d => { label: d, value: d }),
+        }) }}
+
+        {{ forms.selectField({
+            label: 'How scans get started'|t('microscope'),
+            instructions: 'Cron is the reliable option. The control panel fallback only works while somebody is using the control panel, but it needs no server access.'|t('microscope'),
+            id: 'scheduleTrigger',
+            name: 'settings[scheduleTrigger]',
+            value: settings.scheduleTrigger,
+            options: [
+                { label: 'A cron job (recommended)'|t('microscope'), value: 'cron' },
+                { label: 'Control panel requests'|t('microscope'), value: 'web' },
+            ],
+        }) }}
+
+        <div class="field">
+            <div class="heading"><label>{{ 'Cron command'|t('microscope') }}</label></div>
+            <div class="instructions">
+                <p>{{ 'Run this hourly. It checks whether a scan is due and starts one only when it is.'|t('microscope') }}</p>
+            </div>
+            <pre style="padding: 12px; border-radius: 4px; overflow-x: auto;"><code>0 * * * * cd {{ rootPath }} &amp;&amp; php craft microscope/scan/scheduled</code></pre>
+        </div>
+
+        {% if settings.scheduleEnabled %}
+            <p class="light">
+                {% set next = schedules.nextRunAt() %}
+                {{ 'Schedule:'|t('microscope') }} {{ schedules.cadence().describe() }}.
+                {% if next %}{{ 'Next run: {date}.'|t('microscope', { date: next|datetime('short') }) }}{% endif %}
+            </p>
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <h2>{{ 'Notifications'|t('microscope') }}</h2>
+
+    {{ forms.lightswitchField({
+        label: 'Email scan results'|t('microscope'),
+        id: 'notifyEnabled',
+        name: 'settings[notifyEnabled]',
+        on: settings.notifyEnabled,
+        toggle: 'notify-settings',
+    }) }}
+
+    <div id="notify-settings" class="{{ settings.notifyEnabled ? '' : 'hidden' }}">
+        {{ forms.textareaField({
+            label: 'Recipients'|t('microscope'),
+            instructions: 'One email address per line. Environment variables (`$SCAN_REPORT_EMAIL`) are supported.'|t('microscope'),
+            id: 'notifyRecipients',
+            name: 'settings[notifyRecipients]',
+            value: settings.notifyRecipients|join("\n"),
+            rows: 3,
+            errors: settings.getErrors('notifyRecipients'),
+        }) }}
+
+        {{ forms.selectField({
+            label: 'When to send'|t('microscope'),
+            id: 'notifyOn',
+            name: 'settings[notifyOn]',
+            value: settings.notifyOn,
+            options: [
+                { label: 'Only when something new appears'|t('microscope'), value: 'new' },
+                { label: 'Whenever there are any problems'|t('microscope'), value: 'problems' },
+                { label: 'After every scan'|t('microscope'), value: 'always' },
+            ],
+            instructions: 'The first option keeps the emails worth opening — it stays quiet while nothing has changed.'|t('microscope'),
+        }) }}
+
+        {{ forms.lightswitchField({
+            label: 'Attach the PDF report'|t('microscope'),
+            instructions: pdfAvailable
+                ? 'Attaches the full report, including how to fix each finding.'|t('microscope')
+                : 'The dompdf library isn’t installed, so no PDF can be generated. Run `composer require dompdf/dompdf`.'|t('microscope'),
+            id: 'attachPdf',
+            name: 'settings[attachPdf]',
+            on: settings.attachPdf and pdfAvailable,
+            disabled: not pdfAvailable,
+        }) }}
+    </div>
+
+    <hr>
+
+    <h2>{{ 'Housekeeping'|t('microscope') }}</h2>
+
+    {{ forms.textField({
+        label: 'Scans to keep'|t('microscope'),
+        instructions: 'Older scans are deleted after each new one. Keeping some history is what makes the "new since last scan" comparison work.'|t('microscope'),
+        id: 'retainScans',
+        name: 'settings[retainScans]',
+        value: settings.retainScans,
+        type: 'number',
+        size: 8,
+        errors: settings.getErrors('retainScans'),
+    }) }}
+
+    {{ forms.selectField({
+        label: 'Log level'|t('microscope'),
+        instructions: 'Microscope writes to `storage/logs/microscope.log`.'|t('microscope'),
+        id: 'logLevel',
+        name: 'settings[logLevel]',
+        value: settings.logLevel,
+        options: [
+            { label: 'Error'|t('microscope'), value: 'error' },
+            { label: 'Warning'|t('microscope'), value: 'warning' },
+            { label: 'Info'|t('microscope'), value: 'info' },
+            { label: 'Debug'|t('microscope'), value: 'debug' },
+        ],
+    }) }}
+{% endblock %}

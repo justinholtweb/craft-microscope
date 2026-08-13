@@ -1,0 +1,297 @@
+/**
+ * The report stylesheet.
+ *
+ * Inlined into the document by the Reports service — it is never registered as an asset bundle,
+ * and never fetched. It has to work in three places: on screen, through a browser's print dialog,
+ * and inside dompdf. Anything dompdf can't do (flexbox, grid, custom properties, modern colour
+ * functions) is avoided here and lives in report-pdf.css only if it has a table-based fallback.
+ */
+
+* {
+    box-sizing: border-box;
+}
+
+body.microscope-report {
+    margin: 0;
+    padding: 40px;
+    background: #fff;
+    color: #1f2933;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+h1, h2, h3, h4 {
+    color: #102a43;
+    line-height: 1.25;
+}
+
+h1 { font-size: 30px; margin: 0 0 6px; }
+h2 { font-size: 19px; margin: 0 0 14px; padding-bottom: 8px; border-bottom: 2px solid #102a43; }
+h3 { font-size: 15px; margin: 0; }
+h4 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #627d98;
+    margin: 16px 0 4px;
+}
+
+p { margin: 0 0 10px; }
+
+code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9em;
+    background: #f0f4f8;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+pre {
+    background: #f0f4f8;
+    border-left: 3px solid #9fb3c8;
+    padding: 10px 12px;
+    border-radius: 3px;
+    overflow-x: auto;
+    font-size: 11px;
+    line-height: 1.5;
+    /* Long config lines have to wrap in a PDF — there is nowhere to scroll to. */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+}
+
+ul, ol { margin: 6px 0 10px; padding-left: 22px; }
+li { margin-bottom: 4px; }
+
+/* ---------------------------------------------------------------- cover */
+
+.report-cover {
+    border-bottom: 3px solid #102a43;
+    padding-bottom: 24px;
+    margin-bottom: 28px;
+    /* A table, not flexbox: dompdf's flex support is not reliable enough to lay out the one
+       element every report begins with. */
+    display: table;
+    width: 100%;
+}
+
+.report-cover-text {
+    display: table-cell;
+    vertical-align: middle;
+    width: 65%;
+}
+
+.report-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 10px;
+    font-weight: 700;
+    color: #627d98;
+    margin: 0 0 6px;
+}
+
+.report-meta {
+    color: #627d98;
+    font-size: 12px;
+    margin: 8px 0 0;
+}
+
+.report-score {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+    width: 35%;
+    padding: 16px;
+    border-radius: 8px;
+    background: #f0f4f8;
+}
+
+.report-score-number {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.report-score-out-of {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #627d98;
+    margin-top: 4px;
+}
+
+.report-score-grade {
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.report-score-good .report-score-number { color: #15803d; }
+.report-score-fair .report-score-number { color: #0369a1; }
+.report-score-poor .report-score-number { color: #b45309; }
+.report-score-bad .report-score-number { color: #cf1124; }
+.report-score-unknown .report-score-number { color: #829ab1; }
+
+/* -------------------------------------------------------------- sections */
+
+.report-section {
+    margin-bottom: 32px;
+}
+
+.report-lead {
+    font-size: 14px;
+    line-height: 1.65;
+}
+
+.report-note {
+    background: #f0f4f8;
+    border-left: 3px solid #9fb3c8;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-top: 12px;
+}
+
+.report-muted { color: #627d98; }
+.report-small { font-size: 11px; }
+
+/* ---------------------------------------------------------------- tables */
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 12px;
+}
+
+.report-table th,
+.report-table td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid #d9e2ec;
+    vertical-align: top;
+}
+
+.report-table thead th {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #627d98;
+    border-bottom: 2px solid #9fb3c8;
+}
+
+.report-table .numeric { text-align: right; white-space: nowrap; }
+
+.report-measure {
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12px;
+}
+
+.report-measure th {
+    text-align: left;
+    padding: 3px 14px 3px 0;
+    color: #627d98;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.report-measure td { padding: 3px 0; }
+
+.report-evidence { font-size: 11px; }
+.report-evidence td { word-break: break-word; }
+
+/* --------------------------------------------------------------- pills */
+
+.report-pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.report-pill-critical { background: #fee2e2; color: #cf1124; }
+.report-pill-warning { background: #fef3c7; color: #b45309; }
+.report-pill-notice { background: #e0f2fe; color: #0369a1; }
+.report-pill-pass,
+.report-pill-good { background: #dcfce7; color: #15803d; }
+.report-pill-fair { background: #e0f2fe; color: #0369a1; }
+.report-pill-poor { background: #fef3c7; color: #b45309; }
+.report-pill-bad { background: #fee2e2; color: #cf1124; }
+.report-pill-unknown { background: #f0f4f8; color: #627d98; }
+
+/* ------------------------------------------------------------- findings */
+
+.report-priority {
+    margin: 0;
+    padding-left: 22px;
+}
+
+.report-priority li { margin-bottom: 7px; }
+
+.report-finding {
+    border: 1px solid #d9e2ec;
+    border-left-width: 4px;
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    /* Keep a finding and its fix on the same page wherever it fits. */
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
+
+.report-finding-critical { border-left-color: #cf1124; }
+.report-finding-warning { border-left-color: #b45309; }
+.report-finding-notice { border-left-color: #0369a1; }
+.report-finding-pass { border-left-color: #15803d; }
+
+.report-finding header { margin-bottom: 8px; }
+.report-finding header h3 { display: inline; margin-left: 8px; }
+
+.report-finding-summary {
+    color: #334e68;
+    margin: 8px 0 0;
+}
+
+/* --------------------------------------------------------------- footer */
+
+.report-footer {
+    margin-top: 40px;
+    padding-top: 14px;
+    border-top: 1px solid #d9e2ec;
+    color: #829ab1;
+    font-size: 11px;
+    text-align: center;
+}
+
+/* ---------------------------------------------------------------- print */
+
+@media print {
+    body.microscope-report {
+        padding: 0;
+        font-size: 11px;
+    }
+
+    .report-screen-only { display: none; }
+
+    .report-section { page-break-inside: auto; }
+    h2 { page-break-after: avoid; }
+    h4 { page-break-after: avoid; }
+    pre { page-break-inside: avoid; }
+
+    /* Other plugins can inject banners and toolbars into any control panel response. None of
+       them belong in a printed report. */
+    body > *:not(.report-cover):not(.report-section):not(.report-footer) {
+        display: none !important;
+    }
+}

@@ -1,0 +1,52 @@
+{% import "microscope/_partials/macros" as microscope %}
+
+{% do view.registerAssetBundle("justinholtweb\\microscope\\web\\assets\\cp\\MicroscopeAsset") %}
+
+<div class="microscope-hero" style="gap: 12px;">
+    {% include "microscope/_partials/gauge" with {
+        score: scan.score,
+        tone: scan.tone(),
+        grade: scan.grade(),
+        size: 110,
+    } only %}
+
+    <div class="microscope-hero-detail" style="padding: 8px 0;">
+        <p style="margin: 0; font-weight: 600;">{{ result.headline() }}</p>
+        <p class="light" style="margin: 4px 0 0; font-size: 12px;">
+            {{ scan.dateCreated|timestamp('short') }}
+        </p>
+        <p style="margin: 8px 0 0;">
+            <a href="{{ url('microscope/scans/' ~ scan.id) }}">{{ 'View the scan'|t('microscope') }} →</a>
+        </p>
+    </div>
+</div>
+
+{% if widget.showCategories %}
+    <div class="microscope-categories" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); margin-top: 14px;">
+        {% for category in categories %}
+            {% if result.hasCategory(category) %}
+                {% set score = result.categoryScore(category) %}
+                <div class="microscope-category" style="padding: 10px 12px;">
+                    <div class="microscope-category-label" style="font-size: 11px;">
+                        {{ microscope.categoryLabel(category) }}
+                    </div>
+                    <div class="microscope-category-score" style="font-size: 17px;">{{ score }}</div>
+                    <div class="microscope-bar">
+                        <span class="microscope-bar-{{ microscope.tone(score) }}" style="width: {{ score }}%;"></span>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if findings|length %}
+    <ul style="margin-top: 14px;">
+        {% for finding in findings %}
+            <li style="display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--hairline-color);">
+                <span class="microscope-badge microscope-badge-{{ finding.severity }}">{{ finding.severity }}</span>
+                <span>{{ finding.title }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

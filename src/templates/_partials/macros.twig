@@ -1,0 +1,72 @@
+{# Small shared helpers.
+
+   These live as macros rather than as Twig extensions because they are presentation decisions —
+   which colour band a score falls into, what a category is called — and belong next to the markup
+   that uses them. #}
+
+{# The tone band for a score, matching the CSS classes in microscope.css. #}
+{% macro tone(score) %}
+{%- if score is null -%}unknown
+{%- elseif score >= 90 -%}good
+{%- elseif score >= 70 -%}fair
+{%- elseif score >= 50 -%}poor
+{%- else -%}bad
+{%- endif -%}
+{% endmacro %}
+
+{# Human name for a category handle. Kept in step with models/Category.php. #}
+{% macro categoryLabel(category) %}
+{%- if category == 'php' -%}{{ 'PHP'|t('microscope') }}
+{%- elseif category == 'database' -%}{{ 'Database'|t('microscope') }}
+{%- elseif category == 'server' -%}{{ 'Server'|t('microscope') }}
+{%- elseif category == 'craft' -%}{{ 'Craft configuration'|t('microscope') }}
+{%- elseif category == 'schema' -%}{{ 'Content schema'|t('microscope') }}
+{%- elseif category == 'templates' -%}{{ 'Templates'|t('microscope') }}
+{%- else -%}{{ category }}
+{%- endif -%}
+{% endmacro %}
+
+{# One line describing what a scan found. #}
+{% macro countSummary(scan) %}
+{%- if scan.problemCount() == 0 -%}
+    {{ 'No issues'|t('microscope') }}
+{%- else -%}
+    {{ '{c} critical, {w} warnings, {n} notices'|t('microscope', {
+        c: scan.criticalCount,
+        w: scan.warningCount,
+        n: scan.noticeCount,
+    }) }}
+{%- endif -%}
+{% endmacro %}
+
+{# A sparkline of score history.
+
+   Hand-drawn SVG rather than a charting library, for the same reason as the gauge: it renders
+   identically in the control panel, in a print stylesheet and inside a PDF. #}
+{% macro sparkline(history, width, height) %}
+    {% set width = width ?? 480 %}
+    {% set height = height ?? 60 %}
+    {% set count = history|length %}
+
+    {% if count > 1 %}
+        {% set scores = history|column('score') %}
+        {% set min = max(0, min(scores) - 5) %}
+        {% set max = min(100, max(scores) + 5) %}
+        {% set range = max - min > 0 ? max - min : 1 %}
+
+        {% set points = [] %}
+        {% for point in history %}
+            {% set x = loop.index0 / (count - 1) * width %}
+            {% set y = height - ((point.score - min) / range * height) %}
+            {% set points = points|merge([(x|round(2)) ~ ',' ~ (y|round(2))]) %}
+        {% endfor %}
+
+        <svg class="microscope-sparkline" viewBox="0 0 {{ width }} {{ height }}"
+             preserveAspectRatio="none" role="img"
+             aria-label="{{ 'Score over the last {n} scans'|t('microscope', { n: count }) }}">
+            <path class="microscope-sparkline-fill"
+                  d="M0,{{ height }} L{{ points|join(' L') }} L{{ width }},{{ height }} Z"></path>
+            <path d="M{{ points|join(' L') }}"></path>
+        </svg>
+    {% endif %}
+{% endmacro %}

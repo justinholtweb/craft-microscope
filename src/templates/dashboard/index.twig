@@ -1,0 +1,170 @@
+{% extends "_layouts/cp" %}
+
+{% import "microscope/_partials/macros" as microscope %}
+
+{% set selectedSubnavItem = 'dashboard' %}
+{% set docTitle = 'Microscope'|t('microscope') %}
+
+{% do view.registerAssetBundle("justinholtweb\\microscope\\web\\assets\\cp\\MicroscopeAsset") %}
+
+{% block actionButton %}
+    {% if canScan %}
+        <form method="post" accept-charset="UTF-8">
+            {{ csrfInput() }}
+            {{ actionInput('microscope/scans/run') }}
+            {{ redirectInput('microscope') }}
+            <button type="submit" class="btn submit">{{ 'Run a scan'|t('microscope') }}</button>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if scan is null %}
+        <div class="microscope-empty">
+            <h2>{{ 'Nothing scanned yet'|t('microscope') }}</h2>
+            <p>
+                {{ 'Microscope runs {count} checks across your PHP runtime, database, server, Craft configuration, content schema and templates — and tells you how to fix whatever it finds.'|t('microscope', {
+                    count: checkCount,
+                }) }}
+            </p>
+            {% if canScan %}
+                <form method="post" accept-charset="UTF-8" style="margin-top: 20px;">
+                    {{ csrfInput() }}
+                    {{ actionInput('microscope/scans/run') }}
+                    {{ redirectInput('microscope') }}
+                    <button type="submit" class="btn submit big">{{ 'Run the first scan'|t('microscope') }}</button>
+                </form>
+                <p class="light" style="margin-top: 12px; font-size: 12px;">
+                    {{ 'Scans run on Craft’s queue, so make sure something is processing it.'|t('microscope') }}
+                </p>
+            {% endif %}
+        </div>
+    {% else %}
+        {# ---------------------------------------------------------- score #}
+        <div class="microscope-hero">
+            {% include "microscope/_partials/gauge" with {
+                score: scan.score,
+                tone: scan.tone(),
+                grade: scan.grade(),
+            } only %}
+
+            <div class="microscope-hero-detail">
+                <h2 class="microscope-headline">{{ result.headline() }}</h2>
+
+                <p class="light">
+                    {{ 'Last scanned {date}'|t('microscope', {
+                        date: scan.dateCreated|datetime('short'),
+                    }) }}
+                    {%- if scan.runtime %} · {{ '{n}s'|t('microscope', { n: scan.runtime|number_format(1) }) }}{% endif %}
+                    {%- if scan.wasScheduled() %} · {{ 'scheduled'|t('microscope') }}{% endif %}
+                </p>
+
+                {% if previous and previous.score is not null and scan.score is not null %}
+                    {% set delta = scan.score - previous.score %}
+                    <p>
+                        {% if delta > 0 %}
+                            <span class="microscope-badge microscope-badge-pass">▲ {{ delta }}</span>
+                            {{ 'better than the previous scan'|t('microscope') }}
+                        {% elseif delta < 0 %}
+                            <span class="microscope-badge microscope-badge-critical">▼ {{ delta|abs }}</span>
+                            {{ 'worse than the previous scan'|t('microscope') }}
+                        {% else %}
+                            <span class="light">{{ 'Unchanged since the previous scan'|t('microscope') }}</span>
+                        {% endif %}
+                    </p>
+                {% endif %}
+
+                <p>
+                    <a class="btn" href="{{ url('microscope/scans/' ~ scan.id) }}">
+                        {{ 'View the full scan'|t('microscope') }}
+                    </a>
+                    <a class="btn" href="{{ url('microscope/scans/' ~ scan.id ~ '/report') }}" target="_blank" rel="noopener">
+                        {{ 'Printable report'|t('microscope') }}
+                    </a>
+                </p>
+
+                {% if nextScheduled %}
+                    <p class="light" style="font-size: 12px;">
+                        {{ 'Next scheduled scan: {date}'|t('microscope', {
+                            date: nextScheduled|datetime('short'),
+                        }) }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ------------------------------------------------------ categories #}
+        <hr>
+        <h2>{{ 'By area'|t('microscope') }}</h2>
+        {% include "microscope/_partials/categories" with {
+            result: result,
+            categories: categories,
+            linkTo: url('microscope/scans/' ~ scan.id),
+        } only %}
+
+        {# --------------------------------------------------------- history #}
+        {% if history|length > 1 %}
+            <hr>
+            <h2>{{ 'Score history'|t('microscope') }}</h2>
+            <div style="max-width: 640px;">
+                {{ microscope.sparkline(history) }}
+                <p class="light" style="font-size: 12px;">
+                    {{ 'Last {n} scans, oldest first.'|t('microscope', { n: history|length }) }}
+                </p>
+            </div>
+        {% endif %}
+
+        {# --------------------------------------------------------- changes #}
+        {% if newFindings|length or resolvedFindings|length %}
+            <hr>
+            <h2>{{ 'Since the last scan'|t('microscope') }}</h2>
+
+            {% if newFindings|length %}
+                <h3>{{ 'New'|t('microscope') }} <span class="light">({{ newFindings|length }})</span></h3>
+                {% for finding in newFindings|slice(0, 5) %}
+                    {% include "microscope/_partials/finding" with { finding: finding } only %}
+                {% endfor %}
+            {% endif %}
+
+            {% if resolvedFindings|length %}
+                <h3>{{ 'Resolved'|t('microscope') }} <span class="light">({{ resolvedFindings|length }})</span></h3>
+                <ul class="microscope-skipped">
+                    {% for finding in resolvedFindings|slice(0, 8) %}
+                        <li>✓ {{ finding.title }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endif %}
+
+        {# ----------------------------------------------------- top findings #}
+        {% set problems = result.problems() %}
+        {% if problems|length %}
+            <hr>
+            <h2>{{ 'Worth fixing first'|t('microscope') }}</h2>
+            <p class="light">
+                {{ 'The highest-impact findings from this scan. Expand any of them for step-by-step instructions.'|t('microscope') }}
+            </p>
+
+            {% for finding in problems|slice(0, 5) %}
+                {% include "microscope/_partials/finding" with {
+                    finding: finding,
+                    open: loop.first,
+                } only %}
+            {% endfor %}
+
+            {% if problems|length > 5 %}
+                <p>
+                    <a class="btn" href="{{ url('microscope/scans/' ~ scan.id) }}">
+                        {{ 'See all {n} findings'|t('microscope', { n: problems|length }) }}
+                    </a>
+                </p>
+            {% endif %}
+        {% else %}
+            <hr>
+            <div class="microscope-empty">
+                <h2>{{ 'Nothing to fix'|t('microscope') }}</h2>
+                <p>{{ 'Every check passed. {n} checks ran.'|t('microscope', { n: result.passes()|length }) }}</p>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

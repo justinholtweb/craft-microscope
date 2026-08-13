@@ -1,0 +1,39 @@
+{# Per-category scores as a grid of cards.
+
+   Params:
+     result      ScanResult
+     categories  string[]
+     linkTo      string|null  base URL to anchor each card at #}
+
+{% import "microscope/_partials/macros" as microscope %}
+
+<div class="microscope-categories">
+    {% for category in categories %}
+        {% if result.hasCategory(category) %}
+            {% set score = result.categoryScore(category) %}
+            {% set tone = microscope.tone(score) %}
+            {% set problems = result.problems(category)|length %}
+
+            <div class="microscope-category">
+                <div class="microscope-category-label">{{ microscope.categoryLabel(category) }}</div>
+                <div class="microscope-category-score">{{ score }}<span class="light" style="font-size: 13px;">/100</span></div>
+                <div class="microscope-bar">
+                    <span class="microscope-bar-{{ tone }}" style="width: {{ score }}%;"></span>
+                </div>
+                <div class="light" style="font-size: 12px; margin-top: 8px;">
+                    {% if problems %}
+                        {% if linkTo %}
+                            <a href="{{ linkTo }}#category-{{ category }}">
+                                {{ '{n} to look at'|t('microscope', { n: problems }) }}
+                            </a>
+                        {% else %}
+                            {{ '{n} to look at'|t('microscope', { n: problems }) }}
+                        {% endif %}
+                    {% else %}
+                        {{ 'All clear'|t('microscope') }}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Microscope">
+    <!-- Single-colour silhouette. Craft tints this to match the control panel nav, so every path
+         has to be one solid shape with no strokes and no fills of its own. -->
+    <path d="M10 52h44a2.5 2.5 0 0 1 0 5H10a2.5 2.5 0 0 1 0-5z"/>
+    <path d="M24 52v-8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v8z"/>
+    <path d="M14 38h20a1.75 1.75 0 0 1 0 3.5H14A1.75 1.75 0 0 1 14 38z"/>
+    <path d="M38.6 42.1a2 2 0 0 1-1.2-3.6c4-2.6 6.9-5.6 8.2-9 1.2-3.3 1.1-6.6.4-9.9a2 2 0 1 1 3.9-.8c.8 3.9.9 8-.6 12.1-1.7 4.4-5.2 8-9.8 11a2 2 0 0 1-.9.2z"/>
+    <path d="M35.9 12.4l5.4 2.3a3 3 0 0 1 1.6 3.9l-6.6 15.6a3 3 0 0 1-3.9 1.6l-5.4-2.3a3 3 0 0 1-1.6-3.9L32 14a3 3 0 0 1 3.9-1.6z"/>
+    <circle cx="25.5" cy="35" r="5"/>
+    <path d="M39.4 4.7l4.6 2a2.5 2.5 0 0 1 1.3 3.3l-1.7 4-8-3.4 1.7-4a2.5 2.5 0 0 1 3.3-1.3z"/>
+    <circle cx="45" cy="40" r="4.2"/>
+</svg>

@@ -1,0 +1,311 @@
+{# The standalone report — printed from the browser, or rendered to a PDF by dompdf.
+
+   A complete HTML document with its CSS inlined, deliberately. Registering an asset bundle here
+   would let every other installed plugin inject its own chrome into `head()`/`endBody()`, and all
+   of it would end up in the PDF. A PDF renderer can't fetch an external stylesheet anyway.
+
+   Params:
+     scan, result, previous, newFindings, resolvedFindings, categories,
+     siteName, siteUrl, generatedAt, forPdf, css #}
+
+{% import "microscope/_partials/macros" as microscope %}
+
+<!DOCTYPE html>
+<html lang="{{ craft.app.language }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ siteName }} — {{ 'Performance report'|t('microscope') }}</title>
+    <style>{{ css|raw }}</style>
+</head>
+<body class="microscope-report{{ forPdf ? ' microscope-report-pdf' : '' }}">
+
+<header class="report-cover">
+    <div class="report-cover-text">
+        <p class="report-eyebrow">{{ 'Performance report'|t('microscope') }}</p>
+        <h1>{{ siteName }}</h1>
+        <p class="report-meta">
+            {% if siteUrl %}{{ siteUrl }}<br>{% endif %}
+            {{ 'Scanned {date}'|t('microscope', { date: scan.dateCreated|datetime('long') }) }}<br>
+            {{ 'Report generated {date}'|t('microscope', { date: generatedAt|datetime('long') }) }}
+        </p>
+    </div>
+
+    <div class="report-score report-score-{{ scan.tone() }}">
+        <div class="report-score-number">{{ scan.score ?? '—' }}</div>
+        <div class="report-score-out-of">{{ 'out of 100'|t('microscope') }}</div>
+        <div class="report-score-grade">{{ 'Grade {grade}'|t('microscope', { grade: scan.grade() }) }}</div>
+    </div>
+</header>
+
+{# ------------------------------------------------------------- summary #}
+<section class="report-section">
+    <h2>{{ 'Summary'|t('microscope') }}</h2>
+
+    <p class="report-lead">
+        {% if scan.problemCount() == 0 %}
+            {{ 'Microscope ran {total} checks against this site and found nothing that needs attention.'|t('microscope', {
+                total: result.findings|length,
+            }) }}
+        {% else %}
+            {{ 'Microscope ran {total} checks against this site and found {problems} things worth looking at: {critical} critical, {warning} warnings and {notice} notices. Each is explained below, with the steps to put it right.'|t('microscope', {
+                total: result.findings|length,
+                problems: scan.problemCount(),
+                critical: scan.criticalCount,
+                warning: scan.warningCount,
+                notice: scan.noticeCount,
+            }) }}
+        {% endif %}
+    </p>
+
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>{{ 'Area'|t('microscope') }}</th>
+                <th class="numeric">{{ 'Score'|t('microscope') }}</th>
+                <th class="numeric">{{ 'Findings'|t('microscope') }}</th>
+                <th>{{ 'What it covers'|t('microscope') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+                {% if result.hasCategory(category) %}
+                    {% set score = result.categoryScore(category) %}
+                    <tr>
+                        <th scope="row">{{ microscope.categoryLabel(category) }}</th>
+                        <td class="numeric">
+                            <span class="report-pill report-pill-{{ microscope.tone(score) }}">{{ score }}</span>
+                        </td>
+                        <td class="numeric">{{ result.problems(category)|length }}</td>
+                        <td class="report-muted">
+                            {%- if category == 'php' -%}{{ 'The PHP runtime: version, OPcache, memory and extensions.'|t('microscope') }}
+                            {%- elseif category == 'database' -%}{{ 'MySQL or MariaDB tuning, and the size of Craft’s tables.'|t('microscope') }}
+                            {%- elseif category == 'server' -%}{{ 'The web server, transport and hardware.'|t('microscope') }}
+                            {%- elseif category == 'craft' -%}{{ 'Caching, the queue, garbage collection and images.'|t('microscope') }}
+                            {%- elseif category == 'schema' -%}{{ 'Fields, layouts and the volume of content.'|t('microscope') }}
+                            {%- elseif category == 'templates' -%}{{ 'Twig query patterns that scale badly.'|t('microscope') }}
+                            {%- endif -%}
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if previous and previous.score is not null and scan.score is not null %}
+        {% set delta = scan.score - previous.score %}
+        <p class="report-note">
+            {% if delta > 0 %}
+                {{ 'Up {n} points since the previous scan on {date}.'|t('microscope', {
+                    n: delta, date: previous.dateCreated|datetime('short'),
+                }) }}
+            {% elseif delta < 0 %}
+                {{ 'Down {n} points since the previous scan on {date}.'|t('microscope', {
+                    n: delta|abs, date: previous.dateCreated|datetime('short'),
+                }) }}
+            {% else %}
+                {{ 'Unchanged since the previous scan on {date}.'|t('microscope', {
+                    date: previous.dateCreated|datetime('short'),
+                }) }}
+            {% endif %}
+
+            {% if newFindings|length %}
+                {{ '{n} new.'|t('microscope', { n: newFindings|length }) }}
+            {% endif %}
+            {% if resolvedFindings|length %}
+                {{ '{n} resolved.'|t('microscope', { n: resolvedFindings|length }) }}
+            {% endif %}
+        </p>
+    {% endif %}
+</section>
+
+{# --------------------------------------------------------- priority list #}
+{% set problems = result.problems() %}
+
+{% if problems|length %}
+    <section class="report-section">
+        <h2>{{ 'What to do first'|t('microscope') }}</h2>
+        <ol class="report-priority">
+            {% for finding in problems|slice(0, 10) %}
+                <li>
+                    <span class="report-pill report-pill-{{ finding.severity }}">{{ finding.severity }}</span>
+                    <strong>{{ finding.title }}</strong>
+                    <span class="report-muted">— {{ microscope.categoryLabel(finding.category) }}</span>
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+{% endif %}
+
+{# ------------------------------------------------------------- findings #}
+{% for category, findings in result.groupedByCategory(true) %}
+    <section class="report-section report-findings">
+        <h2>{{ microscope.categoryLabel(category) }}</h2>
+
+        {% for finding in findings %}
+            <article class="report-finding report-finding-{{ finding.severity }}">
+                <header>
+                    <span class="report-pill report-pill-{{ finding.severity }}">{{ finding.severity }}</span>
+                    <h3>{{ finding.title }}</h3>
+                </header>
+
+                {% if finding.summary %}
+                    <p class="report-finding-summary">{{ finding.summary|md('gfm', true) }}</p>
+                {% endif %}
+
+                {% if finding.observed or finding.expected %}
+                    <table class="report-measure">
+                        <tbody>
+                            {% if finding.observed %}
+                                <tr>
+                                    <th>{{ 'Found'|t('microscope') }}</th>
+                                    <td><code>{{ finding.observed }}</code></td>
+                                </tr>
+                            {% endif %}
+                            {% if finding.expected %}
+                                <tr>
+                                    <th>{{ 'Recommended'|t('microscope') }}</th>
+                                    <td><code>{{ finding.expected }}</code></td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                {% endif %}
+
+                {% if finding.impact %}
+                    <h4>{{ 'Why it matters'|t('microscope') }}</h4>
+                    {{ finding.impact|md('gfm') }}
+                {% endif %}
+
+                {% if finding.remediation %}
+                    <h4>{{ 'How to fix it'|t('microscope') }}</h4>
+                    {{ finding.remediation|md('gfm') }}
+                {% endif %}
+
+                {% if finding.evidence|length %}
+                    <h4>{{ 'Where'|t('microscope') }}</h4>
+                    {% set columns = finding.evidence|first|keys %}
+                    <table class="report-table report-evidence">
+                        <thead>
+                            <tr>
+                                {% for column in columns %}<th>{{ column|replace({'_': ' '})|title }}</th>{% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in finding.evidence|slice(0, 25) %}
+                                <tr>
+                                    {% for column in columns %}
+                                        <td>
+                                            {%- set value = row[column] ?? '' -%}
+                                            {%- if value is same as(true) -%}{{ 'yes'|t('microscope') }}
+                                            {%- elseif value is same as(false) -%}{{ 'no'|t('microscope') }}
+                                            {%- else -%}{{ value }}
+                                            {%- endif -%}
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    {% if finding.occurrences > 25 %}
+                        <p class="report-muted report-small">
+                            {{ 'Showing 25 of {total} occurrences. The full list is in the control panel.'|t('microscope', {
+                                total: finding.occurrences,
+                            }) }}
+                        </p>
+                    {% endif %}
+                {% endif %}
+
+                {% if finding.docsUrl %}
+                    <p class="report-small report-muted">{{ 'Further reading:'|t('microscope') }} {{ finding.docsUrl }}</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </section>
+{% endfor %}
+
+{# --------------------------------------------------------------- passed #}
+{% set passes = result.passes() %}
+{% if passes|length %}
+    <section class="report-section">
+        <h2>{{ 'Checks that passed'|t('microscope') }}</h2>
+        <table class="report-table">
+            <tbody>
+                {% for finding in passes %}
+                    <tr>
+                        <th scope="row">{{ finding.title }}</th>
+                        <td><code>{{ finding.observed ?? '' }}</code></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endif %}
+
+{# -------------------------------------------------------------- skipped #}
+{% if result.skipped|length %}
+    <section class="report-section">
+        <h2>{{ 'Checks that couldn’t run'|t('microscope') }}</h2>
+        <p class="report-muted">
+            {{ 'These didn’t apply to this site, or this environment wouldn’t let Microscope see what it needed. They don’t count against the score.'|t('microscope') }}
+        </p>
+        <table class="report-table">
+            <tbody>
+                {% for handle, reason in result.skipped %}
+                    <tr>
+                        <th scope="row"><code>{{ handle }}</code></th>
+                        <td class="report-muted">{{ reason }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endif %}
+
+{# ---------------------------------------------------------- environment #}
+{% if result.environment|length %}
+    <section class="report-section">
+        <h2>{{ 'Environment'|t('microscope') }}</h2>
+        <p class="report-muted report-small">
+            {{ 'What this scan was taken against. Worth checking when comparing two reports.'|t('microscope') }}
+        </p>
+        <table class="report-table">
+            <tbody>
+                {% for group, values in result.environment %}
+                    {% if values is iterable %}
+                        {% for key, value in values %}
+                            <tr>
+                                <th scope="row">{{ group }}.{{ key }}</th>
+                                <td><code>
+                                    {%- if value is same as(true) -%}true
+                                    {%- elseif value is same as(false) -%}false
+                                    {%- elseif value is iterable -%}{{ value|join(', ') }}
+                                    {%- else -%}{{ value ?? '—' }}
+                                    {%- endif -%}
+                                </code></td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+{% endif %}
+
+<footer class="report-footer">
+    <p>
+        {{ 'Generated by Microscope for Craft CMS'|t('microscope') }}
+        · {{ 'Scan #{id}'|t('microscope', { id: scan.id }) }}
+        · {{ '{n}s'|t('microscope', { n: scan.runtime ? scan.runtime|number_format(1) : '0' }) }}
+    </p>
+    {% if not forPdf %}
+        <p class="report-screen-only">
+            {{ 'Use your browser’s print dialog (⌘P / Ctrl-P) to save this as a PDF.'|t('microscope') }}
+        </p>
+    {% endif %}
+</footer>
+
+</body>
+</html>

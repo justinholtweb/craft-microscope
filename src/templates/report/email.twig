@@ -1,0 +1,105 @@
+{# The notification email body.
+
+   Written for email clients, which means tables, inline styles and no external anything. The
+   detail lives in the attached PDF and in the control panel; this is the part somebody reads on a
+   phone to decide whether it needs acting on today. #}
+
+{% set tone = scan.tone() %}
+{% set toneColour = tone == 'good' ? '#15803d' : (tone == 'fair' ? '#0369a1' : (tone == 'poor' ? '#b45309' : '#cf1124')) %}
+
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #1f2933; max-width: 640px;">
+
+    <p style="text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; color: #627d98; margin: 0 0 4px;">
+        {{ 'Performance report'|t('microscope') }}
+    </p>
+
+    <h1 style="font-size: 22px; margin: 0 0 16px; color: #102a43;">{{ siteName }}</h1>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+            <td style="padding: 16px 24px; background: #f0f4f8; border-radius: 6px; text-align: center;">
+                <div style="font-size: 40px; font-weight: 800; line-height: 1; color: {{ toneColour }};">
+                    {{ scan.score ?? '—' }}
+                </div>
+                <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #627d98; margin-top: 4px;">
+                    {{ 'out of 100'|t('microscope') }} · {{ 'grade {g}'|t('microscope', { g: scan.grade() }) }}
+                </div>
+            </td>
+            <td style="padding-left: 20px; vertical-align: middle;">
+                <p style="margin: 0; font-size: 15px;"><strong>{{ result.headline() }}</strong></p>
+                <p style="margin: 4px 0 0; color: #627d98; font-size: 12px;">
+                    {{ 'Scanned {date}'|t('microscope', { date: scan.dateCreated|datetime('long') }) }}
+                </p>
+                {% if previous and previous.score is not null and scan.score is not null %}
+                    {% set delta = scan.score - previous.score %}
+                    <p style="margin: 4px 0 0; font-size: 12px; color: {{ delta < 0 ? '#cf1124' : (delta > 0 ? '#15803d' : '#627d98') }};">
+                        {%- if delta > 0 -%}
+                            {{ '▲ {n} points since the last scan'|t('microscope', { n: delta }) }}
+                        {%- elseif delta < 0 -%}
+                            {{ '▼ {n} points since the last scan'|t('microscope', { n: delta|abs }) }}
+                        {%- else -%}
+                            {{ 'Unchanged since the last scan'|t('microscope') }}
+                        {%- endif -%}
+                    </p>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    {% if newFindings|length %}
+        <h2 style="font-size: 15px; color: #102a43; margin: 24px 0 8px;">
+            {{ 'New since the last scan'|t('microscope') }}
+        </h2>
+        <ul style="margin: 0 0 16px; padding-left: 20px;">
+            {% for finding in newFindings|slice(0, 10) %}
+                <li style="margin-bottom: 8px;">
+                    <strong>{{ finding.title }}</strong>
+                    <span style="color: #627d98; font-size: 12px;"> — {{ finding.severity }}</span>
+                    {% if finding.summary %}
+                        <br><span style="color: #486581; font-size: 13px;">{{ finding.summary|md('gfm', true) }}</span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if resolvedFindings|length %}
+        <h2 style="font-size: 15px; color: #102a43; margin: 24px 0 8px;">
+            {{ 'Resolved'|t('microscope') }}
+        </h2>
+        <ul style="margin: 0 0 16px; padding-left: 20px; color: #15803d;">
+            {% for finding in resolvedFindings|slice(0, 10) %}
+                <li style="margin-bottom: 4px;">{{ finding.title }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% set problems = result.problems() %}
+    {% if problems|length %}
+        <h2 style="font-size: 15px; color: #102a43; margin: 24px 0 8px;">
+            {{ 'Worth fixing first'|t('microscope') }}
+        </h2>
+        <ol style="margin: 0 0 16px; padding-left: 20px;">
+            {% for finding in problems|slice(0, 5) %}
+                <li style="margin-bottom: 6px;">
+                    <strong>{{ finding.title }}</strong>
+                    {% if finding.observed %}
+                        <br><span style="color: #627d98; font-size: 12px;">
+                            {{ 'Found'|t('microscope') }}: {{ finding.observed }}{% if finding.expected %} · {{ 'recommended'|t('microscope') }}: {{ finding.expected }}{% endif %}
+                        </span>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    {% endif %}
+
+    <p style="margin: 24px 0;">
+        <a href="{{ cpUrl }}" style="display: inline-block; padding: 10px 18px; background: #102a43; color: #fff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 13px;">
+            {{ 'Open the full report'|t('microscope') }}
+        </a>
+    </p>
+
+    <p style="color: #829ab1; font-size: 11px; border-top: 1px solid #d9e2ec; padding-top: 12px; margin-top: 24px;">
+        {{ 'Sent by Microscope. Every finding in the attached report includes step-by-step instructions for fixing it.'|t('microscope') }}
+    </p>
+</div>

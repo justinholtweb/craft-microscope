@@ -1,0 +1,18 @@
+{% import "_includes/forms" as forms %}
+
+{{ forms.textField({
+    label: 'Findings to show'|t('microscope'),
+    id: 'limit',
+    name: 'limit',
+    value: widget.limit,
+    type: 'number',
+    size: 4,
+    errors: widget.getErrors('limit'),
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Show the per-area breakdown'|t('microscope'),
+    id: 'showCategories',
+    name: 'showCategories',
+    on: widget.showCategories,
+}) }}
