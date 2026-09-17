@@ -5,6 +5,7 @@ namespace justinholtweb\microscope\checks\php;
 use Craft;
 use justinholtweb\microscope\checks\BaseCheck;
 use justinholtweb\microscope\checks\CheckContext;
+use justinholtweb\microscope\checks\RequiresWebSapi;
 use justinholtweb\microscope\helpers\Bytes;
 use justinholtweb\microscope\models\Category;
 
@@ -14,9 +15,15 @@ use justinholtweb\microscope\models\Category;
  * These aren't speed settings — they're the settings that decide whether slow operations complete
  * at all. A site whose `max_input_vars` is too low loses field data on save with no error, which
  * is the kind of problem people spend a day on before thinking to check php.ini.
+ *
+ * Every directive here is one the control panel runs into on a web request, and every one of them
+ * is read from whichever `php.ini` the running SAPI loaded — so the check only runs where that is
+ * the site's. {@see RequiresWebSapi}
  */
 class RequestLimitsCheck extends BaseCheck
 {
+    use RequiresWebSapi;
+
     private const MIN_EXECUTION_TIME = 120;
     private const MIN_INPUT_VARS = 3000;
     private const MIN_UPLOAD = 20 * 1024 * 1024;
@@ -48,8 +55,7 @@ class RequestLimitsCheck extends BaseCheck
 
         $executionTime = $php->maxExecutionTime();
 
-        // 0 means no limit, which is normal and correct on the CLI.
-        if ($executionTime !== null && $executionTime > 0 && $executionTime < self::MIN_EXECUTION_TIME && $php->isWebSapi()) {
+        if ($executionTime !== null && $executionTime > 0 && $executionTime < self::MIN_EXECUTION_TIME) {
             $findings[] = $this->warning([
                 'title' => Craft::t('microscope', 'PHP execution time limit is short'),
                 'summary' => Craft::t('microscope', 'Requests are cut off after {observed} seconds.', ['observed' => $executionTime]),

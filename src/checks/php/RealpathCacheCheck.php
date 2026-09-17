@@ -5,6 +5,7 @@ namespace justinholtweb\microscope\checks\php;
 use Craft;
 use justinholtweb\microscope\checks\BaseCheck;
 use justinholtweb\microscope\checks\CheckContext;
+use justinholtweb\microscope\checks\RequiresWebSapi;
 use justinholtweb\microscope\helpers\Bytes;
 use justinholtweb\microscope\models\Category;
 
@@ -15,9 +16,15 @@ use justinholtweb\microscope\models\Category;
  * a `stat` per component. Craft plus Composer's autoloader means deeply nested paths, thousands of
  * times per request. PHP caches the results, but the default 4 MB cache is too small to hold them
  * all, so the same paths get resolved again and again.
+ *
+ * Both directives, and the live usage figure that goes with them, belong to the running process,
+ * and a console binary's cache has nothing to say about the one serving requests — so this only
+ * runs on a web request. {@see RequiresWebSapi}
  */
 class RealpathCacheCheck extends BaseCheck
 {
+    use RequiresWebSapi;
+
     private const RECOMMENDED_SIZE = 4096 * 1024;
     private const RECOMMENDED_TTL = 600;
 

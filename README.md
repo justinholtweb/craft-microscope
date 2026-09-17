@@ -116,10 +116,21 @@ php craft microscope/scan/prune 20                  # keep the last 20
 `--fail-on` is what makes this useful in a deploy pipeline: a build can refuse to ship a change
 that turns OPcache off or leaves `devMode` on.
 
-**One caveat about CLI scans.** They read the *CLI* PHP configuration, which routinely differs from
-the one serving the site — different `memory_limit`, different `max_execution_time`, and very often
-no OPcache. Microscope records which SAPI each scan came from and the PHP findings say so, but for
-the PHP area specifically a scan run from the control panel describes the site more accurately.
+**One caveat about CLI scans.** `ini_get()` reports the configuration of the process that calls it,
+and the console binary loads its own `php.ini` — on Herd, Valet, DDEV, Docker and most shared
+hosting, a different one from PHP-FPM's. A site set to `memory_limit = 1280M` for web requests
+would be measured at the console's 128 MB default.
+
+So rather than report a number from the wrong process, Microscope skips the checks that depend on
+one: **memory limit**, **request limits**, **realpath cache**, and OPcache's sizing analysis. They
+appear under "Checks that couldn't run" with the SAPI named, and they don't count against the
+score. Everything else — PHP version, extensions, the database, Craft's configuration, your
+content schema and your templates — is the same from either side, so a CLI scan still covers most
+of the ground. For the PHP area, run the scan from the control panel.
+
+The same applies to scheduled scans run by a console queue worker (`php craft queue/listen`). If
+you want the PHP area covered on a schedule, leave `runQueueAutomatically` on so the queue runs
+from web requests, or trigger the scan from the control panel.
 
 ## Templates
 

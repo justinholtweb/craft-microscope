@@ -17,9 +17,13 @@ use justinholtweb\microscope\models\Finding;
  * parsed and compiled on every request. Turning it on is frequently the difference between a
  * 400 ms response and a 60 ms one, and it is a two-line config change.
  *
- * Note the SAPI caveat: from the CLI, the values read here describe the CLI runtime, which is
- * usually *not* the one serving the site. The scan records which SAPI it came from and this check
- * says so rather than quietly reporting the wrong numbers as fact.
+ * The SAPI caveat cuts this check in half. From the CLI, everything read here describes the CLI
+ * runtime, which is usually *not* the one serving the site. "OPcache is off here" is still worth
+ * saying from the console, with the note that `opcache.enable_cli` is a different directive from
+ * `opcache.enable` — but the *tuning* analysis is not. Cache size, file slots, hit rate and
+ * restarts all belong to the process running the scan, and a console binary's numbers say nothing
+ * about PHP-FPM's, so outside a web SAPI they're left unreported rather than guessed at. The scan
+ * records which SAPI it came from either way.
  */
 class OpcacheCheck extends BaseCheck
 {
@@ -59,6 +63,10 @@ class OpcacheCheck extends BaseCheck
 
         if (!$php->opcacheEnabled()) {
             return [$this->opcacheDisabled($context)];
+        }
+
+        if (!$php->isWebSapi()) {
+            return [$this->tuningNotMeasurable($context)];
         }
 
         $findings = [];
@@ -197,6 +205,22 @@ class OpcacheCheck extends BaseCheck
         }
 
         return $findings;
+    }
+
+    /**
+     * OPcache is on for the SAPI running the scan, but that SAPI isn't the site's.
+     *
+     * A pass rather than a problem, and deliberately so: nothing has been found wrong, and nothing
+     * has been measured either. Reporting a console cache's size or hit rate as the site's is the
+     * mistake this exists to avoid.
+     */
+    private function tuningNotMeasurable(CheckContext $context): Finding
+    {
+        return $this->pass(
+            Craft::t('microscope', 'OPcache is enabled'),
+            Craft::t('microscope', 'Enabled ({sapi} SAPI)', ['sapi' => $context->php->sapi()]),
+            Craft::t('microscope', 'Its size, file slots, hit rate and restart count weren’t assessed. This scan ran from the command line, which loads its own `php.ini` and keeps its own cache, so none of those numbers would describe the PHP serving the site. Run a scan from the control panel for those.'),
+        );
     }
 
     private function opcacheDisabled(CheckContext $context): Finding

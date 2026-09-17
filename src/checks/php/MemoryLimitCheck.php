@@ -5,15 +5,21 @@ namespace justinholtweb\microscope\checks\php;
 use Craft;
 use justinholtweb\microscope\checks\BaseCheck;
 use justinholtweb\microscope\checks\CheckContext;
+use justinholtweb\microscope\checks\RequiresWebSapi;
 use justinholtweb\microscope\helpers\Bytes;
 use justinholtweb\microscope\models\Category;
 
 /**
  * Whether PHP has enough memory for the work Craft asks of it — and not so much that a runaway
  * request can take the server down with it.
+ *
+ * `memory_limit` is per-SAPI, and the console's is usually PHP's 128 MB default regardless of what
+ * the web server allows, so this only runs where the number means something. {@see RequiresWebSapi}
  */
 class MemoryLimitCheck extends BaseCheck
 {
+    use RequiresWebSapi;
+
     private const MINIMUM = 256 * 1024 * 1024;
     private const COMFORTABLE = 512 * 1024 * 1024;
 

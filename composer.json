@@ -2,7 +2,7 @@
     "name": "justinholtweb/craft-microscope",
     "description": "Put your Craft site under the microscope — audits your schema, templates, PHP, database and server for performance problems, and tells you exactly how to fix each one.",
     "type": "craft-plugin",
-    "version": "5.0.0",
+    "version": "5.0.1",
     "keywords": [
         "craft",
         "cms",
