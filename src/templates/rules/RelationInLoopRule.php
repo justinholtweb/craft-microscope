@@ -85,11 +85,48 @@ MD;
                     return false;
                 }
 
+                // `entry.topics.eagerly().all()` is lazy eager-loading: one query for the whole
+                // loop, not one per row. It is also what this rule's own remediation recommends
+                // for loops you can't reach the feeding query from, so flagging it would mean
+                // following the advice can never clear the warning.
+                if ($this->isEagerlyLoaded($source, $offset)) {
+                    return false;
+                }
+
                 // A `craft.` call on the same line is a fresh query, which QueryInLoopRule already
                 // reports with better advice. Reporting both would double-count one mistake.
                 return !str_contains($source->line($line), 'craft.');
             },
             detail: fn(int $offset, array $match) => sprintf('.%s() called per iteration', $match[1]),
         );
+    }
+
+    /**
+     * Whether the call at `$offset` is executing a query that was already marked `.eagerly()`.
+     *
+     * Looks at the method chain the call belongs to rather than the whole line, so a genuine
+     * `entry.topics.all()` still gets reported when something else on the same line happens to be
+     * eager-loaded.
+     */
+    private function isEagerlyLoaded(TemplateSource $source, int $offset): bool
+    {
+        return preg_match('/\.eagerly[^\S\r\n]*\(/', $this->chainBefore($source, $offset)) === 1;
+    }
+
+    /**
+     * The chain of `.method(…)` calls immediately preceding an offset, e.g. `.image.eagerly()`.
+     *
+     * Stops at the first thing that isn't part of the chain — whitespace that isn't followed by a
+     * dot, an opening bracket, a filter — which is what keeps two expressions on one line apart.
+     */
+    private function chainBefore(TemplateSource $source, int $offset): string
+    {
+        $head = substr($source->masked(), 0, $offset);
+        $newline = strrpos($head, "\n");
+        $prefix = $newline === false ? $head : substr($head, $newline + 1);
+
+        preg_match('/(?:[^\S\r\n]*\.[A-Za-z_]\w*(?:\((?:[^()\r\n]|\([^()\r\n]*\))*\))?)+[^\S\r\n]*$/', $prefix, $match);
+
+        return $match[0] ?? '';
     }
 }

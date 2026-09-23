@@ -171,6 +171,61 @@ final class TemplateAnalyzerTest extends TestCase
         self::assertSame([], $issues);
     }
 
+    /**
+     * Lazy eager-loading runs one query for the whole loop. It is also what this rule's own
+     * remediation recommends, so flagging it would mean following the advice can never clear the
+     * warning. See #2.
+     */
+    public function testDoesNotFlagALazilyEagerLoadedRelation(): void
+    {
+        $issues = $this->only($this->analyze(<<<'TWIG'
+            {% for block in entry.gallery.all() %}
+              {{ block.image.eagerly().one().url }}
+            {% endfor %}
+            TWIG), 'relationInLoop');
+
+        self::assertSame([], $issues);
+    }
+
+    public function testDoesNotFlagLazyEagerLoadingWithAnAlias(): void
+    {
+        $issues = $this->only($this->analyze(<<<'TWIG'
+            {% for entry in entries %}
+              {% for tag in entry.topics.eagerly('entryTopics').all() %}{{ tag.title }}{% endfor %}
+            {% endfor %}
+            TWIG), 'relationInLoop');
+
+        self::assertSame([], $issues);
+    }
+
+    public function testDoesNotFlagLazyEagerLoadingFollowedByOtherQueryMethods(): void
+    {
+        $issues = $this->only($this->analyze(<<<'TWIG'
+            {% for entry in entries %}
+              {% for tag in entry.topics.eagerly().limit(3).all() %}{{ tag.title }}{% endfor %}
+            {% endfor %}
+            TWIG), 'relationInLoop');
+
+        self::assertSame([], $issues);
+    }
+
+    /**
+     * `.eagerly()` earlier in the line belongs to a different expression, so the bare relation
+     * next to it is still one query per row.
+     */
+    public function testStillFlagsABareRelationBesideAnEagerLoadedOne(): void
+    {
+        $issues = $this->only($this->analyze(<<<'TWIG'
+            {% for entry in entries %}
+              {{ entry.topics.eagerly().count() }} {{ entry.authors.count() }}
+            {% endfor %}
+            TWIG), 'relationInLoop');
+
+        self::assertCount(1, $issues);
+        self::assertSame(2, $issues[0]->line);
+        self::assertStringContainsString('.count()', (string)$issues[0]->detail);
+    }
+
     // -----------------------------------------------------------------
     // countViaAll
     // -----------------------------------------------------------------

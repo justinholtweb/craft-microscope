@@ -1,5 +1,19 @@
 # Release Notes for Microscope
 
+## 5.0.2
+
+### Fixed
+
+- `relationInLoop` no longer flags a relation that has already been lazily eager-loaded. Craft 5's
+  `entry.topics.eagerly().all()` runs one query for the whole loop, but the rule matched any
+  `.all()`, `.one()`, `.count()`, `.exists()` or `.nth()` inside a loop and so kept reporting it —
+  which meant following the rule's own remediation could never clear the warning. The check now
+  reads the method chain the call belongs to, so `.eagerly()` anywhere in it (including
+  `.eagerly('alias')` and `.eagerly().limit(3).all()`) is skipped, while a bare relation elsewhere
+  on the same line is still reported. ([#2])
+
+[#2]: https://github.com/justinholtweb/craft-microscope/issues/2
+
 ## 5.0.1
 
 ### Fixed
