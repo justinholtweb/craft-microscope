@@ -317,9 +317,9 @@ class Scans extends Component
         }
 
         $scan = $this->getScanById($scanId);
-        $result->environment = $scan?->environment ?? [];
-        $result->skipped = $scan?->skipped ?? [];
-        $result->runtime = $scan?->runtime ?? 0.0;
+        $result->environment = $scan->environment ?? [];
+        $result->skipped = $scan->skipped ?? [];
+        $result->runtime = $scan->runtime ?? 0.0;
 
         return $result;
     }

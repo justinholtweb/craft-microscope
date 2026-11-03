@@ -16,11 +16,11 @@
 
             <div class="microscope-category">
                 <div class="microscope-category-label">{{ microscope.categoryLabel(category) }}</div>
-                <div class="microscope-category-score">{{ score }}<span class="light" style="font-size: 13px;">/100</span></div>
+                <div class="microscope-category-score">{{ score }}<span class="light microscope-category-max">/100</span></div>
                 <div class="microscope-bar">
                     <span class="microscope-bar-{{ tone }}" style="width: {{ score }}%;"></span>
                 </div>
-                <div class="light" style="font-size: 12px; margin-top: 8px;">
+                <div class="light microscope-note microscope-category-problems">
                     {% if problems %}
                         {% if linkTo %}
                             <a href="{{ linkTo }}#category-{{ category }}">

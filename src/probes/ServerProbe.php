@@ -149,7 +149,7 @@ class ServerProbe
             if (function_exists('sys_getloadavg')) {
                 $load = sys_getloadavg();
 
-                if (is_array($load) && count($load) === 3) {
+                if (is_array($load)) {
                     return [(float)$load[0], (float)$load[1], (float)$load[2]];
                 }
             }

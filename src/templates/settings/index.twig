@@ -32,7 +32,7 @@
     }) }}
 
     {% if templateDirectories|length %}
-        <p class="light" style="font-size: 12px; margin-top: -12px;">
+        <p class="light microscope-note microscope-field-note">
             {{ 'Currently scanning:'|t('microscope') }}
             {% for directory in templateDirectories %}<code>{{ directory }}</code>{{ not loop.last ? ', ' }}{% endfor %}
         </p>
@@ -137,7 +137,7 @@
             <div class="instructions">
                 <p>{{ 'Run this hourly. It checks whether a scan is due and starts one only when it is.'|t('microscope') }}</p>
             </div>
-            <pre style="padding: 12px; border-radius: 4px; overflow-x: auto;"><code>0 * * * * cd {{ rootPath }} &amp;&amp; php craft microscope/scan/scheduled</code></pre>
+            <pre class="microscope-code-block"><code>0 * * * * cd {{ rootPath }} &amp;&amp; php craft microscope/scan/scheduled</code></pre>
         </div>
 
         {% if settings.scheduleEnabled %}

@@ -28,13 +28,13 @@
                 }) }}
             </p>
             {% if canScan %}
-                <form method="post" accept-charset="UTF-8" style="margin-top: 20px;">
+                <form class="microscope-first-scan" method="post" accept-charset="UTF-8">
                     {{ csrfInput() }}
                     {{ actionInput('microscope/scans/run') }}
                     {{ redirectInput('microscope') }}
                     <button type="submit" class="btn submit big">{{ 'Run the first scan'|t('microscope') }}</button>
                 </form>
-                <p class="light" style="margin-top: 12px; font-size: 12px;">
+                <p class="light microscope-note microscope-first-scan-note">
                     {{ 'Scans run on Craft’s queue, so make sure something is processing it.'|t('microscope') }}
                 </p>
             {% endif %}
@@ -84,7 +84,7 @@
                 </p>
 
                 {% if nextScheduled %}
-                    <p class="light" style="font-size: 12px;">
+                    <p class="light microscope-note">
                         {{ 'Next scheduled scan: {date}'|t('microscope', {
                             date: nextScheduled|datetime('short'),
                         }) }}
@@ -106,9 +106,9 @@
         {% if history|length > 1 %}
             <hr>
             <h2>{{ 'Score history'|t('microscope') }}</h2>
-            <div style="max-width: 640px;">
+            <div class="microscope-history">
                 {{ microscope.sparkline(history) }}
-                <p class="light" style="font-size: 12px;">
+                <p class="light microscope-note">
                     {{ 'Last {n} scans, oldest first.'|t('microscope', { n: history|length }) }}
                 </p>
             </div>

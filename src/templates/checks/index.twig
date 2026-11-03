@@ -21,7 +21,7 @@
             {% set enabled = settings.checkIsEnabled(check.handle()) %}
 
             <div class="microscope-check-row">
-                <div style="flex: 0 0 auto; padding-top: 2px;">
+                <div class="microscope-check-control">
                     {% if canManage %}
                         <div class="lightswitch{{ enabled ? ' on' : '' }}">
                             <input type="checkbox"
@@ -39,7 +39,7 @@
                 <div class="microscope-check-meta">
                     <strong>{{ check.label() }}</strong>
                     <span class="microscope-check-handle">{{ check.handle() }}</span>
-                    <div class="light" style="font-size: 13px;">{{ check.description() }}</div>
+                    <div class="light microscope-check-description">{{ check.description() }}</div>
 
                     {% if not state.available %}
                         <div class="microscope-unavailable">
@@ -61,13 +61,13 @@
 
     {% for rule in analyzer.rules() %}
         <div class="microscope-check-row">
-            <div style="flex: 0 0 auto; padding-top: 2px;">
+            <div class="microscope-check-control">
                 <span class="microscope-badge microscope-badge-{{ rule.severity() }}">{{ rule.severity() }}</span>
             </div>
             <div class="microscope-check-meta">
                 <strong>{{ rule.title() }}</strong>
                 <span class="microscope-check-handle">{{ rule.handle() }}</span>
-                <div class="light" style="font-size: 13px;">{{ rule.impact() }}</div>
+                <div class="light microscope-check-description">{{ rule.impact() }}</div>
             </div>
         </div>
     {% endfor %}

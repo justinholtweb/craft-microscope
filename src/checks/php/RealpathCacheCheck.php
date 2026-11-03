@@ -84,7 +84,7 @@ class RealpathCacheCheck extends BaseCheck
         }
 
         if ($findings === []) {
-            $usage = $used !== null && $size !== null && $size > 0
+            $usage = $used !== null && $size !== null
                 ? sprintf(' (%s in use, %d%%)', Bytes::format($used), (int)round($used / $size * 100))
                 : '';
 

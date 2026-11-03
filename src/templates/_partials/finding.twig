@@ -81,7 +81,7 @@
             {% if finding.evidence|length %}
                 <h4>{{ 'Where'|t('microscope') }}</h4>
                 {% set columns = finding.evidence|first|keys %}
-                <div style="overflow-x: auto;">
+                <div class="microscope-scroll-x">
                     <table class="microscope-evidence">
                         <thead>
                             <tr>
@@ -114,7 +114,7 @@
                 </div>
 
                 {% if finding.occurrences > finding.evidence|length %}
-                    <p class="light" style="font-size: 12px; margin-top: 8px;">
+                    <p class="light microscope-note microscope-evidence-more">
                         {{ 'Showing {shown} of {total} occurrences.'|t('microscope', {
                             shown: finding.evidence|length,
                             total: finding.occurrences,
@@ -124,7 +124,7 @@
             {% endif %}
 
             {% if finding.docsUrl %}
-                <p style="margin-top: 14px;">
+                <p class="microscope-finding-docs">
                     <a href="{{ finding.docsUrl }}" rel="noopener noreferrer" target="_blank">
                         {{ 'Read more'|t('microscope') }} →
                     </a>

@@ -150,6 +150,14 @@
     border-radius: 3px;
 }
 
+.microscope-category-max {
+    font-size: 13px;
+}
+
+.microscope-category-problems {
+    margin-top: 8px;
+}
+
 .microscope-bar-good { background: var(--microscope-pass); }
 .microscope-bar-fair { background: var(--microscope-notice); }
 .microscope-bar-poor { background: var(--microscope-warning); }
@@ -230,7 +238,7 @@
 }
 
 .microscope-finding-body pre {
-    background: var(--gray-100, #f3f4f6);
+    background: var(--gray-100);
     border-radius: var(--small-border-radius, 4px);
     padding: 12px 14px;
     overflow-x: auto;
@@ -255,6 +263,14 @@
 
 .microscope-finding-body li {
     margin-bottom: 4px;
+}
+
+.microscope-evidence-more {
+    margin-top: 8px;
+}
+
+.microscope-finding-docs {
+    margin-top: 14px;
 }
 
 /* --------------------------------------------------------------- badges */
@@ -297,6 +313,10 @@
 }
 
 /* -------------------------------------------------------------- history */
+
+.microscope-history {
+    max-width: 640px;
+}
 
 .microscope-sparkline {
     width: 100%;
@@ -350,10 +370,61 @@
 
 /* ---------------------------------------------------------------- misc */
 
+/* Secondary text set smaller than `.light` alone — dates, counts, footnotes. */
+.microscope-note {
+    font-size: 12px;
+}
+
+/* Pulls a note up under the field above it, closing the gap Craft leaves after a field. */
+.microscope-field-note {
+    margin-top: -12px;
+}
+
+.microscope-heading-aside {
+    font-weight: normal;
+}
+
+.microscope-scroll-x {
+    overflow-x: auto;
+}
+
+.microscope-code-block {
+    background: var(--gray-100);
+    border-radius: var(--small-border-radius, 4px);
+    padding: 12px;
+    overflow-x: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+    .microscope-code-block {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+.microscope-col-icon {
+    width: 30px;
+}
+
+.microscope-col-key {
+    width: 220px;
+}
+
+.microscope-first-scan {
+    margin-top: 20px;
+}
+
+.microscope-first-scan-note {
+    margin-top: 12px;
+}
+
 .microscope-empty {
     text-align: center;
     padding: 48px 24px;
     color: var(--medium-text-color);
+}
+
+.microscope-empty-compact {
+    padding: 24px 12px;
 }
 
 .microscope-empty h2 {
@@ -381,6 +452,15 @@
     border-bottom: 0;
 }
 
+.microscope-check-control {
+    flex: 0 0 auto;
+    padding-top: 2px;
+}
+
+.microscope-check-description {
+    font-size: 13px;
+}
+
 .microscope-check-meta {
     flex: 1 1 auto;
 }
@@ -395,4 +475,59 @@
     font-size: 12px;
     color: var(--microscope-warning);
     margin-top: 4px;
+}
+
+/* --------------------------------------------------------------- widget */
+
+/* The dashboard widget reuses the score and category components at a smaller size. */
+
+.microscope-widget-hero {
+    gap: 12px;
+}
+
+.microscope-widget-detail {
+    padding: 8px 0;
+}
+
+.microscope-widget-headline {
+    margin: 0;
+    font-weight: 600;
+}
+
+.microscope-widget-date {
+    margin: 4px 0 0;
+    font-size: 12px;
+}
+
+.microscope-widget-link {
+    margin: 8px 0 0;
+}
+
+.microscope-categories-compact {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    margin-top: 14px;
+}
+
+.microscope-categories-compact .microscope-category {
+    padding: 10px 12px;
+}
+
+.microscope-categories-compact .microscope-category-label {
+    font-size: 11px;
+}
+
+.microscope-categories-compact .microscope-category-score {
+    font-size: 17px;
+}
+
+.microscope-widget-findings {
+    margin-top: 14px;
+}
+
+.microscope-widget-findings li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--hairline-color);
 }

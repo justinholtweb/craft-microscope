@@ -114,7 +114,7 @@
                 <hr>
                 <h2 id="category-{{ category }}">
                     {{ microscope.categoryLabel(category) }}
-                    <span class="light" style="font-weight: normal;">
+                    <span class="light microscope-heading-aside">
                         {{ '· {score}/100'|t('microscope', { score: result.categoryScore(category) }) }}
                     </span>
                 </h2>
@@ -140,7 +140,7 @@
                 <tbody>
                     {% for finding in passes %}
                         <tr>
-                            <td style="width: 30px;">
+                            <td class="microscope-col-icon">
                                 <span class="microscope-badge microscope-badge-pass">✓</span>
                             </td>
                             <td>{{ finding.title }}</td>
@@ -175,7 +175,7 @@
                         {% if values is iterable %}
                             {% for key, value in values %}
                                 <tr>
-                                    <th style="width: 220px;">{{ group }}.{{ key }}</th>
+                                    <th class="microscope-col-key">{{ group }}.{{ key }}</th>
                                     <td>
                                         <code>
                                             {%- if value is same as(true) -%}true

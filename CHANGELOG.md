@@ -1,5 +1,16 @@
 # Release Notes for Microscope
 
+## 5.0.3
+
+### Changed
+
+- The control panel templates no longer use inline styles. Their layout and spacing now come from
+  Microscope's stylesheet, built on Craft's CP custom properties, so the dashboard, scan, checks
+  and settings pages and the dashboard widget follow the control panel's theme consistently. The
+  cron command on the Settings page now gets the same code-block background as findings. ([#3])
+
+[#3]: https://github.com/justinholtweb/craft-microscope/issues/3
+
 ## 5.0.2
 
 ### Fixed

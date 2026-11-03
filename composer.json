@@ -2,7 +2,7 @@
     "name": "justinholtweb/craft-microscope",
     "description": "Put your Craft site under the microscope — audits your schema, templates, PHP, database and server for performance problems, and tells you exactly how to fix each one.",
     "type": "craft-plugin",
-    "version": "5.0.2",
+    "version": "5.0.3",
     "keywords": [
         "craft",
         "cms",
@@ -40,7 +40,8 @@
         "craftcms/ecs": "dev-main",
         "craftcms/phpstan": "dev-main",
         "dompdf/dompdf": "^3.0",
-        "phpunit/phpunit": "^10.5"
+        "phpunit/phpunit": "^10.5",
+        "phpstan/phpstan": "^1.12 || ^2.2"
     },
     "suggest": {
         "dompdf/dompdf": "Generates downloadable PDF reports and lets scheduled scans email one as an attachment. Without it, reports are still available as a print-optimised page. Note that every published dompdf release carries a security advisory, so Composer's audit policy blocks it by default — which is why Microscope treats it as optional rather than requiring it."
