@@ -8,6 +8,7 @@ use craft\helpers\Db;
 use justinholtweb\microscope\checks\CheckContext;
 use justinholtweb\microscope\checks\CheckInterface;
 use justinholtweb\microscope\events\ScanEvent;
+use justinholtweb\microscope\jobs\ScanJob;
 use justinholtweb\microscope\migrations\Install;
 use justinholtweb\microscope\models\Finding;
 use justinholtweb\microscope\models\Scan;
@@ -127,6 +128,20 @@ class Scans extends Component
         ]));
 
         return $scan;
+    }
+
+    /**
+     * Puts a scan on the queue — how the control panel and MCP start one.
+     *
+     * Never inline: a full scan reads every template on the site and can outlive a web request.
+     */
+    public function queueScan(ScanConfig $config, ?int $creatorId = null, bool $notify = false): void
+    {
+        Craft::$app->getQueue()->push(new ScanJob([
+            'config' => $config->toArray(),
+            'creatorId' => $creatorId,
+            'notify' => $notify,
+        ]));
     }
 
     /**

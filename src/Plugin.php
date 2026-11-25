@@ -5,15 +5,27 @@ namespace justinholtweb\microscope;
 use Craft;
 use craft\base\Plugin as BasePlugin;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterGqlQueriesEvent;
+use craft\events\RegisterGqlSchemaComponentsEvent;
+use craft\events\RegisterGqlTypesEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\helpers\Html;
 use craft\helpers\UrlHelper;
 use craft\log\MonologTarget;
 use craft\services\Dashboard;
+use craft\services\Gql;
 use craft\services\UserPermissions;
 use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
+use justinholtweb\microscope\gql\GqlAccess;
+use justinholtweb\microscope\gql\queries\MicroscopeQueries;
+use justinholtweb\microscope\gql\types\MicroscopeCategoryScoreType;
+use justinholtweb\microscope\gql\types\MicroscopeCheckType;
+use justinholtweb\microscope\gql\types\MicroscopeFindingType;
+use justinholtweb\microscope\gql\types\MicroscopeScanType;
+use justinholtweb\microscope\gql\types\MicroscopeSkippedCheckType;
 use justinholtweb\microscope\models\Settings;
 use justinholtweb\microscope\services\Checks;
 use justinholtweb\microscope\services\Reports;
@@ -51,6 +63,9 @@ class Plugin extends BasePlugin
     /** Log category used by everything in the plugin. */
     public const LOG_CATEGORY = 'microscope';
 
+    /** The first Craft version whose MCP server Microscope's tools are written for. */
+    public const MCP_MIN_CRAFT_VERSION = '5.12.1';
+
     public string $schemaVersion = '1.0.0';
     public bool $hasCpSection = true;
     public bool $hasCpSettings = true;
@@ -78,6 +93,64 @@ class Plugin extends BasePlugin
         $this->registerWidgets();
         $this->registerTwigVariable();
         $this->registerScheduleTrigger();
+        $this->registerGraphQl();
+        $this->registerMcp();
+    }
+
+    /**
+     * Whether this Craft has the MCP server Microscope's tools need (5.12.1 or later).
+     */
+    public static function mcpAvailable(?string $craftVersion = null): bool
+    {
+        return version_compare($craftVersion ?? Craft::$app->getVersion(), self::MCP_MIN_CRAFT_VERSION, '>=')
+            && class_exists(\craft\services\Mcp::class)
+            && class_exists(\Mcp\Capability\Attribute\McpTool::class);
+    }
+
+    /**
+     * MCP tools, on Craft 5.12.1 and later. Nothing here touches an MCP class on older Craft,
+     * where the server doesn't exist.
+     */
+    private function registerMcp(): void
+    {
+        if (!self::mcpAvailable()) {
+            return;
+        }
+
+        Event::on(
+            \craft\services\Mcp::class,
+            \craft\services\Mcp::EVENT_REGISTER_CAPABILITY_TYPES,
+            static function(RegisterComponentTypesEvent $event) {
+                $event->types[] = mcp\MicroscopeTools::class;
+            },
+        );
+    }
+
+    /**
+     * Read-only GraphQL queries for scans and checks, behind the `microscopeScans:read` scope and
+     * never on the public schema.
+     */
+    private function registerGraphQl(): void
+    {
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_TYPES, function(RegisterGqlTypesEvent $event) {
+            $event->types[] = MicroscopeScanType::class;
+            $event->types[] = MicroscopeFindingType::class;
+            $event->types[] = MicroscopeCategoryScoreType::class;
+            $event->types[] = MicroscopeSkippedCheckType::class;
+            $event->types[] = MicroscopeCheckType::class;
+        });
+
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_QUERIES, function(RegisterGqlQueriesEvent $event) {
+            $event->queries = array_merge($event->queries, MicroscopeQueries::getQueries());
+        });
+
+        Event::on(Gql::class, Gql::EVENT_REGISTER_GQL_SCHEMA_COMPONENTS, function(RegisterGqlSchemaComponentsEvent $event) {
+            $event->queries[Craft::t('microscope', 'Microscope')] = [
+                GqlAccess::SCOPE . ':read' => [
+                    'label' => Craft::t('microscope', 'Query Microscope scans and findings (microscopeScans, microscopeScan, microscopeChecks). Never available on the public schema.'),
+                ],
+            ];
+        });
     }
 
     /**
@@ -187,6 +260,7 @@ class Plugin extends BasePlugin
         }
 
         $item['subnav'] = $subnav;
+        $item = $this->customiseNavItem($item, $this->getSettings());
 
         // A badge for outstanding critical findings, so the nav reflects the site's state without
         // anybody having to go and look.
@@ -199,6 +273,49 @@ class Plugin extends BasePlugin
         } catch (Throwable) {
             // The nav is built on every CP request, including ones during an install where the
             // tables don't exist yet. A missing badge is not worth an error page.
+        }
+
+        return $item;
+    }
+
+    /**
+     * The sidebar label and icon from settings: pasted SVG (sanitised every time it's drawn), then
+     * an icon name, then Microscope's own icon. Craft's own Settings → Control Panel Navigation
+     * overrides still win, because Craft applies them afterwards. A bad value never breaks the nav.
+     *
+     * @param array<string, mixed> $item
+     * @return array<string, mixed>
+     */
+    public function customiseNavItem(array $item, Settings $settings): array
+    {
+        $label = trim((string)$settings->navLabel);
+
+        if ($label !== '') {
+            $item['label'] = $label;
+        }
+
+        $svg = trim((string)$settings->navIconSvg);
+        $icon = trim((string)$settings->navIcon);
+
+        try {
+            if ($svg !== '' && Settings::isSvgMarkup($svg)) {
+                $sanitised = Html::svg($svg, true, true, true);
+
+                if ($sanitised !== '') {
+                    $item['icon'] = $sanitised;
+
+                    return $item;
+                }
+            }
+
+            if ($icon !== '' && Settings::iconExists($icon)) {
+                $item['icon'] = $icon;
+            }
+        } catch (Throwable $e) {
+            Craft::warning(
+                sprintf('Couldn’t draw the custom nav icon: %s', $e->getMessage()),
+                self::LOG_CATEGORY,
+            );
         }
 
         return $item;

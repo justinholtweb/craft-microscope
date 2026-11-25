@@ -30,6 +30,9 @@ class Settings extends Model
     public const TRIGGER_CRON = 'cron';
     public const TRIGGER_WEB = 'web';
 
+    /** The largest pasted SVG icon accepted, in bytes. */
+    public const MAX_SVG_BYTES = 20000;
+
     // ---------------------------------------------------------------------
     // What gets checked
     // ---------------------------------------------------------------------
@@ -123,6 +126,26 @@ class Settings extends Model
     public bool $attachPdf = true;
 
     // ---------------------------------------------------------------------
+    // Control panel
+    // ---------------------------------------------------------------------
+
+    /**
+     * @var string|null The CP sidebar label. Empty uses "Microscope".
+     */
+    public ?string $navLabel = null;
+
+    /**
+     * @var string|null The CP sidebar icon: a name from Craft's icon picker (e.g. `gauge`).
+     */
+    public ?string $navIcon = null;
+
+    /**
+     * @var string|null Raw SVG for the CP sidebar icon. Wins over `navIcon`. Stored as entered and
+     *                  sanitised every time it's drawn.
+     */
+    public ?string $navIconSvg = null;
+
+    // ---------------------------------------------------------------------
     // Housekeeping
     // ---------------------------------------------------------------------
 
@@ -152,6 +175,10 @@ class Settings extends Model
             [['notifyOn'], 'in', 'range' => [self::NOTIFY_ALWAYS, self::NOTIFY_PROBLEMS, self::NOTIFY_NEW]],
             [['scheduleTrigger'], 'in', 'range' => [self::TRIGGER_CRON, self::TRIGGER_WEB]],
             [['notifyRecipients'], 'validateRecipients'],
+            [['navLabel'], 'string', 'max' => 64],
+            [['navIcon'], 'validateNavIcon', 'skipOnEmpty' => true],
+            [['navIconSvg'], 'string', 'max' => self::MAX_SVG_BYTES],
+            [['navIconSvg'], 'validateNavIconSvg', 'skipOnEmpty' => true],
         ];
     }
 
@@ -199,6 +226,68 @@ class Settings extends Model
         }
 
         return array_values(array_unique($resolved));
+    }
+
+    public function validateNavIcon(string $attribute): void
+    {
+        if (!self::iconExists((string)$this->$attribute)) {
+            $this->addError($attribute, Craft::t('microscope', 'Choose an icon from the icon picker.'));
+        }
+    }
+
+    public function validateNavIconSvg(string $attribute): void
+    {
+        if (!self::isSvgMarkup((string)$this->$attribute)) {
+            $this->addError($attribute, Craft::t('microscope', 'Paste a single <svg> element.'));
+        }
+    }
+
+    /**
+     * Whether an icon name is one of Craft's bundled icons (the set the icon picker offers).
+     */
+    public static function iconExists(string $name): bool
+    {
+        if ($name === '' || strlen($name) > 64 || !preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $name)) {
+            return false;
+        }
+
+        // `@appicons` is Craft's solid set on a real install.
+        foreach (["@appicons/$name.svg", "@app/icons/solid/$name.svg", "@app/icons/custom-icons/$name.svg"] as $alias) {
+            $path = Craft::getAlias($alias, false);
+
+            if (is_string($path) && is_file($path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the text is one `<svg>` element, optionally after an XML declaration, comments or a
+     * doctype. Checked before the markup goes anywhere near `Html::svg()`, which would otherwise
+     * treat a non-SVG string as a file path.
+     */
+    public static function isSvgMarkup(string $svg): bool
+    {
+        $svg = trim($svg);
+
+        if (!preg_match('/^(<\?xml[^>]*\?>\s*)?(<!--.*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?<svg[\s>]/is', $svg)) {
+            return false;
+        }
+
+        if (!preg_match('/<\/svg>\s*$/i', $svg)) {
+            return false;
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        $doc = new \DOMDocument();
+        // No network access, no entity expansion.
+        $loaded = $doc->loadXML($svg, LIBXML_NONET);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        return $loaded && $doc->documentElement !== null && strtolower($doc->documentElement->localName) === 'svg';
     }
 
     public function checkIsEnabled(string $handle): bool

@@ -1,5 +1,19 @@
 # Release Notes for Microscope
 
+## 5.1.0
+
+### Added
+
+- MCP tools for Craft's MCP server, on Craft 5.12.1 and later: `microscope_status`,
+  `microscope_scans_list`, `microscope_scan_get`, `microscope_checks_list` and
+  `microscope_scan_run`. They need control panel access plus Microscope's own permissions, and
+  `microscope_scan_run` only queues a scan. On earlier Craft versions nothing is registered.
+- GraphQL queries `microscopeScans`, `microscopeScan` and `microscopeChecks`, behind a new
+  **Query Microscope scans and findings** schema scope. They are never available on the public
+  schema.
+- Sidebar label and icon settings: a custom label, any icon from Craft's icon picker, or a pasted
+  SVG, which is sanitised every time it's drawn.
+
 ## 5.0.3
 
 ### Changed

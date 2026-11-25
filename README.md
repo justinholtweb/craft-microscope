@@ -151,6 +151,71 @@ from web requests, or trigger the scan from the control panel.
 
 Settings are admin-only.
 
+## AI agents (MCP)
+
+On Craft 5.12.1 and later, Microscope adds five tools to Craft's own MCP server, so an agent
+connected to the site (`php craft mcp/serve --user=<you>` over stdio, or Craft's HTTP MCP endpoint)
+can read the site's performance and act on it. On earlier Craft versions nothing is registered.
+
+| Tool | What it does | Needs |
+|---|---|---|
+| `microscope_status` | Current score and grade, the score per area, problems new and resolved since the previous scan, and the schedule | View scans and reports |
+| `microscope_scans_list` | Scans, newest first (`limit` 1–100, `offset`) | View scans and reports |
+| `microscope_scan_get` | One scan's findings, most severe first, each with what was measured, what it should be, the impact and the fix. Omit `scanId` for the latest. Filters: `category`, `severity`, `includePasses`, `onlyNew`; `includeEvidence` adds up to 25 supporting rows per finding | View scans and reports |
+| `microscope_checks_list` | The check catalogue, with whether each check is on (`category` filter) | View scans and reports |
+| `microscope_scan_run` | Puts a scan on the queue, of everything or of the `categories` given. It runs when the queue does, never inside the tool call | Run scans |
+
+All of them also need control panel access, and none is offered on Craft's public MCP server. The
+read tools are read-only (`mcp:read` scope); `microscope_scan_run` needs `mcp:write`.
+
+Output uses the same conventions as the rest of Microscope: dates are ISO-8601, `score` is
+0–100, `grade` A–F, and `remediation` is Markdown. Tool names and output are the same in
+Microscope 5 and 6.
+
+A scan queued from an agent and run by a console queue worker (`php craft queue/listen`) skips the
+memory limit, request limits and realpath cache checks, because the CLI loads its own `php.ini` —
+the same as a scan from `php craft microscope/scan/run`.
+
+## GraphQL
+
+Microscope adds read-only queries to Craft's GraphQL API. Enable **Microscope → Query Microscope
+scans and findings** on a schema to use them. They are never available on the public schema, even
+with that box ticked: findings describe the server's configuration.
+
+```graphql
+{
+  microscopeScan {          # omit `id` for the latest completed scan
+    id score grade dateCreated
+    categoryScores { category label score }
+    skipped { checkHandle reason }
+    findings(severity: "critical") {   # also category: "php" | …, includePasses: true
+      checkHandle category severity title summary
+      observed expected impact remediation docsUrl
+      target occurrences fingerprint
+    }
+  }
+  microscopeScans(limit: 20, offset: 0) { id status trigger score grade criticalCount warningCount noticeCount passCount runtime error dateStarted dateFinished }
+  microscopeChecks(category: "database") { handle category label description enabled }
+}
+```
+
+Dates are ISO-8601 strings. A finding's supporting evidence and the scan's environment summary
+aren't exposed over GraphQL.
+
+## Sidebar label and icon
+
+**Settings → Control panel** changes how Microscope appears in the control panel's sidebar:
+
+- **Sidebar label** — replaces "Microscope".
+- **Sidebar icon** — any icon from Craft's icon picker.
+- **Custom SVG icon** — paste one `<svg>` element to use instead. It is sanitised every time it's
+  drawn (scripts and event handlers are stripped); a single-colour icon using `currentColor`
+  matches the rest of the sidebar.
+
+The SVG wins over the icon, and an override in Craft's own **Settings → Control Panel Navigation**
+wins over both. The keys are `navLabel`, `navIcon` and `navIconSvg`, so they can also be set in
+`config/microscope.php`. The badge counting critical findings stays either way.
+
 ## Extending it
 
 Register your own checks — a plugin knows better than Microscope does what "misconfigured" looks
@@ -174,7 +239,7 @@ during a deploy window.
 
 ## Requirements
 
-- Craft CMS 5.3+
+- Craft CMS 5.3+ (5.12.1+ for the MCP tools)
 - PHP 8.2+
 - MySQL or MariaDB for the database checks (the category skips itself on PostgreSQL)
 

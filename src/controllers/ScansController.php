@@ -4,7 +4,6 @@ namespace justinholtweb\microscope\controllers;
 
 use Craft;
 use craft\web\Controller;
-use justinholtweb\microscope\jobs\ScanJob;
 use justinholtweb\microscope\models\Category;
 use justinholtweb\microscope\models\ScanConfig;
 use justinholtweb\microscope\Plugin;
@@ -91,11 +90,7 @@ class ScansController extends Controller
             $config->categories = array_values(array_filter($categories, [Category::class, 'exists']));
         }
 
-        Craft::$app->getQueue()->push(new ScanJob([
-            'config' => $config->toArray(),
-            'creatorId' => Craft::$app->getUser()->getId(),
-            'notify' => false,
-        ]));
+        Plugin::getInstance()->scans->queueScan($config, Craft::$app->getUser()->getId());
 
         $this->setSuccessFlash(Craft::t('microscope', 'Scan started. It’ll appear here when it finishes.'));
 

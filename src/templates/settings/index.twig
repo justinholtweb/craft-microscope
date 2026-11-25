@@ -199,6 +199,43 @@
 
     <hr>
 
+    <h2>{{ 'Control panel'|t('microscope') }}</h2>
+
+    <p class="light microscope-note">{{ 'How Microscope appears in the control panel’s sidebar. An override set in Settings → Control Panel Navigation takes precedence.'|t('microscope') }}</p>
+
+    {{ forms.textField({
+        label: 'Sidebar label'|t('microscope'),
+        instructions: 'Leave empty for “Microscope”.'|t('microscope'),
+        id: 'navLabel',
+        name: 'settings[navLabel]',
+        value: settings.navLabel,
+        placeholder: 'Microscope',
+        maxlength: 64,
+        errors: settings.getErrors('navLabel'),
+    }) }}
+
+    {{ forms.iconPickerField({
+        label: 'Sidebar icon'|t('microscope'),
+        instructions: 'Leave empty for Microscope’s own icon.'|t('microscope'),
+        id: 'navIcon',
+        name: 'settings[navIcon]',
+        value: settings.navIcon,
+        errors: settings.getErrors('navIcon'),
+    }) }}
+
+    {{ forms.textareaField({
+        label: 'Custom SVG icon'|t('microscope'),
+        instructions: 'Optional. Paste one `<svg>` element to use instead of the icon above. It’s sanitised every time it’s drawn; a single-colour icon using `currentColor` matches the rest of the sidebar.'|t('microscope'),
+        id: 'navIconSvg',
+        name: 'settings[navIconSvg]',
+        value: settings.navIconSvg,
+        rows: 4,
+        class: 'code',
+        errors: settings.getErrors('navIconSvg'),
+    }) }}
+
+    <hr>
+
     <h2>{{ 'Housekeeping'|t('microscope') }}</h2>
 
     {{ forms.textField({

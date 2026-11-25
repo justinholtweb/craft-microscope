@@ -84,6 +84,12 @@ class SettingsController extends Controller
             }
         }
 
+        // Blank means "use Microscope's own", stored as null.
+        foreach (['navLabel', 'navIcon', 'navIconSvg'] as $attribute) {
+            $value = trim((string)($params[$attribute] ?? ''));
+            $settings->$attribute = $value !== '' ? $value : null;
+        }
+
         $settings->notifyRecipients = $this->parseList($params['notifyRecipients'] ?? '');
         $settings->templateDirectories = $this->parseList($params['templateDirectories'] ?? '');
 
