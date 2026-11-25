@@ -1,0 +1,16 @@
+<div class="microscope-buttons">
+    <a class="btn microscope-btn" href="{{ cpUrl('microscope/scans/' ~ scan.id ~ '/report') }}" target="_blank" rel="noopener">
+        {{ 'Print'|t('microscope') }}
+    </a>
+    {% if pdfAvailable %}
+        <a class="btn microscope-btn" href="{{ cpUrl('microscope/scans/' ~ scan.id ~ '/report.pdf') }}">
+            {{ 'Download PDF'|t('microscope') }}
+        </a>
+    {% endif %}
+    {% if canEmail %}
+        <form method="post" action="{{ cpUrl('microscope/scans/' ~ scan.id ~ '/email') }}" accept-charset="UTF-8" class="microscope-run-form">
+            {{ csrf_field() }}
+            <button type="submit" class="btn microscope-btn">{{ 'Email report'|t('microscope') }}</button>
+        </form>
+    {% endif %}
+</div>

@@ -1,5 +1,48 @@
 # Release Notes for Microscope
 
+## 6.0.0-beta.1
+
+Microscope for Craft CMS 6, rebuilt as a native Craft 6 plugin. It runs on Laravel and has no
+dependency on the Yii 2 adapter. Craft 6 is in beta, and so is this release. Update to Microscope
+5.0.3 or later before upgrading Craft, and see
+[the upgrade guide](https://github.com/justinholtweb/craft-microscope/blob/6.0.0/UPGRADING.md).
+
+### Added
+
+- MCP tools on Craft's MCP server: `microscope_status`, `microscope_scans_list`,
+  `microscope_scan_get`, `microscope_checks_list` and `microscope_scan_run`, acting as the MCP user
+  with Microscope's permissions. Same names and output as Microscope 5.1.
+- GraphQL: `microscopeScans`, `microscopeScan` and `microscopeChecks`, behind a *Microscope* schema
+  component. Read-only, and never on the public schema. Same schema as Microscope 5.1.
+- **Settings → Control panel**: a custom sidebar label, an icon from Craft's icon picker (custom icon
+  sets included), or a pasted SVG, sanitised every time it's drawn.
+- Laravel checks in the Craft configuration area: whether config, routes and events are cached in
+  production (`laravelOptimization`), the session driver (`sessionDriver`) and the log level and
+  channel (`logLevel`). The debug-mode, cache and queue checks now read Laravel's `APP_DEBUG`,
+  cache store and queue connection.
+- Scheduled scans run on Laravel's scheduler: `microscope:scan:scheduled` is registered hourly, so a
+  site running `php artisan schedule:run` needs no cron line of Microscope's own.
+- Scheduled-scan notices can also go to a Slack webhook and to the control panel notifications of
+  everyone who can manage Microscope.
+- A scan webhook: a signed JSON POST (`X-Microscope-Signature`), from the queue, after every
+  completed scan, with the score, the problems and what's new or resolved.
+- Laravel events: `ScanStarting` (cancellable, and can change the scan's config), `ScanCompleted`
+  and `ScanFailed`; `RegisteringChecks` to add or remove checks.
+- `microscope:scan:run --json` prints the scan in the `microscope_scan_get` shape, for CI, and
+  `--queue` queues it instead.
+- `microscope.score()` and the rest of the template API in Twig and Blade (`$microscope->score()`).
+  `craft.microscope` still works.
+- A `microscope` log channel (`storage/logs/microscope-*.log`), which a site can redefine in
+  `config/logging.php` to send Microscope's messages anywhere Laravel can.
+
+### Changed
+
+- Console commands are Artisan commands: `php artisan microscope:scan:run`, `:scheduled`, `:list`,
+  `:report`, `:prune` and `microscope:checks`. The Craft 5 names (`microscope/scan/run` …) still
+  work. `-v` shows remediation, as `--verbose` did.
+- Settings use Craft 6's standard plugin settings screen. Every key is unchanged.
+- PHP 8.5 and Craft 6.0.0-beta.1 or later.
+
 ## 5.0.3
 
 ### Changed

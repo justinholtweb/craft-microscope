@@ -1,0 +1,6 @@
+{# Queues a scan. `redirect` is the control panel path to come back to. #}
+<form method="post" action="{{ cpUrl('microscope/scans/run') }}" accept-charset="UTF-8" class="microscope-run-form">
+    {{ csrf_field() }}
+    <input type="hidden" name="return" value="{{ redirect ?? 'microscope' }}">
+    <button type="submit" class="btn submit microscope-btn microscope-btn-primary{{ (big ?? false) ? ' big' }}">{{ label ?? 'Run a scan'|t('microscope') }}</button>
+</form>

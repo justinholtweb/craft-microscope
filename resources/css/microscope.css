@@ -1,0 +1,652 @@
+/**
+ * Microscope control panel styles. Craft 6 loads this on every control panel page, so every rule
+ * is scoped to a microscope- class, and every Craft colour variable has a fallback: most Craft 5
+ * ones are gone from the Craft 6 control panel.
+ *
+ * Built on Craft's own CSS custom properties throughout rather than on fixed colours, so the
+ * plugin follows the control panel into dark mode and inherits any theme the site sets. The only
+ * hard-coded colours are the severity tones, which have to stay recognisable in both themes and
+ * are defined once, below, with dark-mode overrides.
+ */
+
+:root {
+    --microscope-critical: #cf1124;
+    --microscope-critical-bg: #fee2e2;
+    --microscope-warning: #b45309;
+    --microscope-warning-bg: #fef3c7;
+    --microscope-notice: #0369a1;
+    --microscope-notice-bg: #e0f2fe;
+    --microscope-pass: #15803d;
+    --microscope-pass-bg: #dcfce7;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --microscope-critical: #fca5a5;
+        --microscope-critical-bg: rgba(207, 17, 36, 0.18);
+        --microscope-warning: #fcd34d;
+        --microscope-warning-bg: rgba(180, 83, 9, 0.2);
+        --microscope-notice: #7dd3fc;
+        --microscope-notice-bg: rgba(3, 105, 161, 0.2);
+        --microscope-pass: #86efac;
+        --microscope-pass-bg: rgba(21, 128, 61, 0.2);
+    }
+}
+
+/* ---------------------------------------------------------------- score */
+
+.microscope-hero {
+    display: flex;
+    gap: 24px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.microscope-gauge {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 28px;
+    min-width: 200px;
+}
+
+.microscope-gauge svg {
+    display: block;
+    width: 140px;
+    height: 140px;
+}
+
+.microscope-gauge-track {
+    fill: none;
+    stroke: var(--hairline-color, #e3e5e8);
+    stroke-width: 12;
+}
+
+.microscope-gauge-value {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    /* The arc is drawn by animating dashoffset, so the stroke has to start at 12 o'clock. */
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.6s ease;
+}
+
+.microscope-gauge-number {
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    fill: var(--text-color, #1f2937);
+}
+
+.microscope-gauge-grade {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    fill: var(--medium-text-color, #606d7b);
+}
+
+.microscope-tone-good { stroke: var(--microscope-pass); }
+.microscope-tone-fair { stroke: var(--microscope-notice); }
+.microscope-tone-poor { stroke: var(--microscope-warning); }
+.microscope-tone-bad { stroke: var(--microscope-critical); }
+.microscope-tone-unknown { stroke: var(--hairline-color, #e3e5e8); }
+
+.microscope-hero-detail {
+    flex: 1 1 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 4px;
+}
+
+.microscope-headline {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* ------------------------------------------------------------ categories */
+
+.microscope-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.microscope-category {
+    border: 1px solid var(--hairline-color, #e3e5e8);
+    border-radius: var(--large-border-radius, 8px);
+    padding: 14px 16px;
+    background: var(--gray-050, transparent);
+}
+
+.microscope-category-label {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.microscope-category-score {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.microscope-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hairline-color, #e3e5e8);
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.microscope-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+}
+
+.microscope-category-max {
+    font-size: 13px;
+}
+
+.microscope-category-problems {
+    margin-top: 8px;
+}
+
+.microscope-bar-good { background: var(--microscope-pass); }
+.microscope-bar-fair { background: var(--microscope-notice); }
+.microscope-bar-poor { background: var(--microscope-warning); }
+.microscope-bar-bad { background: var(--microscope-critical); }
+
+/* -------------------------------------------------------------- findings */
+
+.microscope-finding {
+    border: 1px solid var(--hairline-color, #e3e5e8);
+    border-left-width: 4px;
+    border-radius: var(--large-border-radius, 8px);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+
+.microscope-finding-critical { border-left-color: var(--microscope-critical); }
+.microscope-finding-warning { border-left-color: var(--microscope-warning); }
+.microscope-finding-notice { border-left-color: var(--microscope-notice); }
+.microscope-finding-pass { border-left-color: var(--microscope-pass); }
+
+.microscope-finding-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    width: 100%;
+    background: none;
+    border: 0;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+}
+
+.microscope-finding-header:hover {
+    background: var(--gray-050, rgba(0, 0, 0, 0.02));
+}
+
+.microscope-finding-title {
+    font-weight: 600;
+    margin: 0 0 2px;
+}
+
+.microscope-finding-summary {
+    color: var(--medium-text-color, #606d7b);
+    font-size: 13px;
+    margin: 0;
+}
+
+.microscope-finding-toggle {
+    margin-left: auto;
+    flex: 0 0 auto;
+    color: var(--medium-text-color, #606d7b);
+    transition: transform 0.15s ease;
+}
+
+.microscope-finding[open] .microscope-finding-toggle,
+.microscope-finding.is-open .microscope-finding-toggle {
+    transform: rotate(90deg);
+}
+
+.microscope-finding-body {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--hairline-color, #e3e5e8);
+    padding-top: 16px;
+}
+
+.microscope-finding-body h4 {
+    margin: 18px 0 6px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--medium-text-color, #606d7b);
+}
+
+.microscope-finding-body h4:first-child {
+    margin-top: 0;
+}
+
+.microscope-finding-body pre {
+    background: var(--gray-100, #e4e7eb);
+    border-radius: var(--small-border-radius, 4px);
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+@media (prefers-color-scheme: dark) {
+    .microscope-finding-body pre {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+.microscope-finding-body code {
+    font-size: 0.92em;
+}
+
+.microscope-finding-body ul {
+    margin: 6px 0 6px 18px;
+    list-style: disc;
+}
+
+.microscope-finding-body li {
+    margin-bottom: 4px;
+}
+
+.microscope-evidence-more {
+    margin-top: 8px;
+}
+
+.microscope-finding-docs {
+    margin-top: 14px;
+}
+
+/* --------------------------------------------------------------- badges */
+
+.microscope-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.microscope-badge-critical { color: var(--microscope-critical); background: var(--microscope-critical-bg); }
+.microscope-badge-warning { color: var(--microscope-warning); background: var(--microscope-warning-bg); }
+.microscope-badge-notice { color: var(--microscope-notice); background: var(--microscope-notice-bg); }
+.microscope-badge-pass { color: var(--microscope-pass); background: var(--microscope-pass-bg); }
+
+.microscope-measure {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 10px 0 0;
+    font-size: 13px;
+}
+
+.microscope-measure dt {
+    color: var(--medium-text-color, #606d7b);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.microscope-measure dd {
+    margin: 2px 0 0;
+    font-weight: 600;
+    font-family: var(--mono-font, monospace);
+}
+
+/* -------------------------------------------------------------- history */
+
+.microscope-history {
+    max-width: 640px;
+}
+
+.microscope-sparkline {
+    width: 100%;
+    height: 60px;
+    display: block;
+}
+
+.microscope-sparkline path {
+    fill: none;
+    stroke: var(--link-color, #2563eb);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.microscope-sparkline .microscope-sparkline-fill {
+    fill: var(--link-color, #2563eb);
+    opacity: 0.08;
+    stroke: none;
+}
+
+/* -------------------------------------------------------------- evidence */
+
+.microscope-evidence {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.microscope-evidence th,
+.microscope-evidence td {
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--hairline-color, #e3e5e8);
+    vertical-align: top;
+}
+
+.microscope-evidence th {
+    font-weight: 600;
+    color: var(--medium-text-color, #606d7b);
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+}
+
+.microscope-evidence code {
+    font-size: 11px;
+    word-break: break-word;
+}
+
+/* ---------------------------------------------------------------- misc */
+
+/* Secondary text set smaller than `.light` alone — dates, counts, footnotes. */
+.microscope-note {
+    font-size: 12px;
+}
+
+/* Pulls a note up under the field above it, closing the gap Craft leaves after a field. */
+.microscope-field-note {
+    margin-top: -12px;
+}
+
+.microscope-heading-aside {
+    font-weight: normal;
+}
+
+.microscope-scroll-x {
+    overflow-x: auto;
+}
+
+.microscope-code-block {
+    background: var(--gray-100, #e4e7eb);
+    border-radius: var(--small-border-radius, 4px);
+    padding: 12px;
+    overflow-x: auto;
+}
+
+@media (prefers-color-scheme: dark) {
+    .microscope-code-block {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+.microscope-col-icon {
+    width: 30px;
+}
+
+.microscope-col-key {
+    width: 220px;
+}
+
+.microscope-first-scan {
+    margin-top: 20px;
+}
+
+.microscope-first-scan-note {
+    margin-top: 12px;
+}
+
+.microscope-empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--medium-text-color, #606d7b);
+}
+
+.microscope-empty-compact {
+    padding: 24px 12px;
+}
+
+.microscope-empty h2 {
+    margin-bottom: 8px;
+}
+
+.microscope-skipped {
+    font-size: 13px;
+    color: var(--medium-text-color, #606d7b);
+}
+
+.microscope-skipped li {
+    margin-bottom: 6px;
+}
+
+.microscope-check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hairline-color, #e3e5e8);
+}
+
+.microscope-check-row:last-child {
+    border-bottom: 0;
+}
+
+.microscope-check-control {
+    flex: 0 0 auto;
+    padding-top: 2px;
+}
+
+.microscope-check-description {
+    font-size: 13px;
+}
+
+.microscope-check-meta {
+    flex: 1 1 auto;
+}
+
+.microscope-check-handle {
+    font-family: var(--mono-font, monospace);
+    font-size: 11px;
+    color: var(--medium-text-color, #606d7b);
+}
+
+.microscope-unavailable {
+    font-size: 12px;
+    color: var(--microscope-warning);
+    margin-top: 4px;
+}
+
+/* --------------------------------------------------------------- widget */
+
+/* The dashboard widget reuses the score and category components at a smaller size. */
+
+.microscope-widget-hero {
+    gap: 12px;
+}
+
+.microscope-widget-detail {
+    padding: 8px 0;
+}
+
+.microscope-widget-headline {
+    margin: 0;
+    font-weight: 600;
+}
+
+.microscope-widget-date {
+    margin: 4px 0 0;
+    font-size: 12px;
+}
+
+.microscope-widget-link {
+    margin: 8px 0 0;
+}
+
+.microscope-categories-compact {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    margin-top: 14px;
+}
+
+.microscope-categories-compact .microscope-category {
+    padding: 10px 12px;
+}
+
+.microscope-categories-compact .microscope-category-label {
+    font-size: 11px;
+}
+
+.microscope-categories-compact .microscope-category-score {
+    font-size: 17px;
+}
+
+.microscope-widget-findings {
+    margin-top: 14px;
+}
+
+.microscope-widget-findings li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--hairline-color, #e3e5e8);
+}
+
+/* Craft 6: buttons, the check switch and inline status --------------------------------------- */
+
+.microscope-buttons,
+.microscope-run-form {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0;
+}
+
+.microscope-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--hairline-color, #cdd2d8);
+    border-radius: var(--small-border-radius, 5px);
+    background: var(--gray-050, #f3f5f7);
+    color: var(--text-color, #1f2937);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.microscope-btn:hover {
+    background: var(--gray-100, #e4e7eb);
+}
+
+.microscope-btn-primary {
+    border-color: transparent;
+    background: #e5422b;
+    color: #fff;
+    font-weight: 600;
+}
+
+.microscope-btn-primary:hover {
+    background: #cf3a25;
+}
+
+.microscope-btn.big {
+    padding: 10px 20px;
+    font-size: 15px;
+}
+
+.microscope-screen .light,
+.microscope-widget .light {
+    color: var(--medium-text-color, #606d7b);
+}
+
+.microscope-screen hr {
+    margin: 24px 0;
+    border: 0;
+    border-top: 1px solid var(--hairline-color, #e3e5e8);
+}
+
+.microscope-switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+}
+
+.microscope-switch input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.microscope-switch span {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: var(--gray-100, #cdd2d8);
+    transition: background 0.15s;
+    pointer-events: none;
+}
+
+.microscope-switch span::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s;
+}
+
+.microscope-switch input:checked + span {
+    background: var(--microscope-pass, #15803d);
+}
+
+.microscope-switch input:checked + span::after {
+    transform: translateX(14px);
+}
+
+.microscope-switch input:focus-visible + span {
+    outline: 2px solid var(--link-color, #2563eb);
+    outline-offset: 2px;
+}
+
+.microscope-check-status {
+    min-height: 1em;
+    font-size: 12px;
+    color: var(--microscope-pass, #15803d);
+}
+
+.microscope-check-status.is-error {
+    color: var(--microscope-critical, #cf1124);
+}
